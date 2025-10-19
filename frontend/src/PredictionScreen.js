@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useAuth } from "../context/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../config";
 import { apiService } from "../services/api";
 
@@ -130,6 +130,55 @@ const PredictionScreen = () => {
     };
   };
 
+  const storeRecommendation = async (type, result) => {
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const userData = userDoc.exists() ? userDoc.data() : {};
+
+      // Get existing recommendations
+      const aiRecommendations = userData.aiRecommendations || {};
+
+      // Store the new recommendation with timestamp
+      aiRecommendations[type] = {
+        ...result,
+        timestamp: new Date(),
+        inputData: type === 'workout' ? getWorkoutInputData() :
+                  type === 'lifestyle' ? getLifestyleInputData() :
+                  getMealInputData(),
+      };
+
+      // Keep only the latest 5 recommendations per type
+      const recommendationHistory = userData.recommendationHistory || {};
+      if (!recommendationHistory[type]) {
+        recommendationHistory[type] = [];
+      }
+
+      recommendationHistory[type].unshift({
+        ...result,
+        timestamp: new Date(),
+        inputData: type === 'workout' ? getWorkoutInputData() :
+                  type === 'lifestyle' ? getLifestyleInputData() :
+                  getMealInputData(),
+      });
+
+      // Keep only latest 5 entries
+      if (recommendationHistory[type].length > 5) {
+        recommendationHistory[type] = recommendationHistory[type].slice(0, 5);
+      }
+
+      await updateDoc(userDocRef, {
+        aiRecommendations,
+        recommendationHistory,
+        lastAIRecommendationUpdate: new Date(),
+      });
+
+    } catch (error) {
+      console.error("Error storing recommendation:", error);
+      // Don't show error to user as the main functionality still works
+    }
+  };
+
   const handlePrediction = async (type) => {
     if (!userData) {
       Alert.alert("Error", "Please complete your profile first");
@@ -162,6 +211,10 @@ const PredictionScreen = () => {
           ...prev,
           [type]: result,
         }));
+
+        // Store the recommendation in the database
+        await storeRecommendation(type, result);
+
         Alert.alert(
           "Success",
           `${
@@ -531,19 +584,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   header: {
-    backgroundColor: "#ff6b6b",
+    backgroundColor: "#A8E6CF",
     padding: 20,
     alignItems: "center",
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "white",
+    color: "black",
     marginBottom: 5,
   },
   subtitle: {
-    fontSize: 16,
-    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    color: "gray",
   },
   tabContainer: {
     flexDirection: "row",

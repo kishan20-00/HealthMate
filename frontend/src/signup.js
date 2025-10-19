@@ -95,7 +95,6 @@ const SignupScreen = ({ navigation }) => {
         currentWeight: parseInt(weight),
       });
 
-      console.log("User profile created successfully!");
     } catch (error) {
       console.error("Signup Error:", error);
       Alert.alert(

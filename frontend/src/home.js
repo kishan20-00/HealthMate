@@ -13,9 +13,13 @@ import { db } from "../config";
 import DailyWeightModal from "./DailyWeightModal";
 import WeeklyLifestyleModal from "./WeeklyLifestyleModal";
 import { DrawerActions } from "@react-navigation/native";
+import { useTheme } from "../context/ThemeContext";
+import { AnimatedWelcomeSection } from "./components";
 
 const HomeScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, pendingUpdates, markUpdateCompleted } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [userData, setUserData] = useState(null);
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [showLifestyleModal, setShowLifestyleModal] = useState(false);
@@ -47,10 +51,10 @@ const HomeScreen = ({ navigation }) => {
 
   // Get BMI category color
   const getBMIColor = (bmiValue) => {
-    if (bmiValue < 18.5) return "#ffa726"; // Orange for underweight
-    if (bmiValue < 25) return "#4caf50"; // Green for normal
-    if (bmiValue < 30) return "#ff9800"; // Orange for overweight
-    return "#f44336"; // Red for obese
+    if (bmiValue < 18.5) return theme.colors.bmi.underweight;
+    if (bmiValue < 25) return theme.colors.bmi.normal;
+    if (bmiValue < 30) return theme.colors.bmi.overweight;
+    return theme.colors.bmi.obese;
   };
 
   const fetchUserData = async () => {
@@ -77,41 +81,44 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (user) {
-      checkForUpdates();
       fetchUserData();
     }
   }, [user]);
 
-  const checkForUpdates = async () => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        const now = new Date();
+  // Handle automatic modal triggering based on pending updates
+  useEffect(() => {
+    if (pendingUpdates.needsDailyUpdate || pendingUpdates.needsWeeklyUpdate) {
+      // Add a small delay to ensure the home screen is fully loaded
+      const timer = setTimeout(() => {
+        if (pendingUpdates.needsDailyUpdate) {
+          setShowWeightModal(true);
+        } else if (pendingUpdates.needsWeeklyUpdate) {
+          setShowLifestyleModal(true);
+        }
+      }, 1500);
 
-        // Check daily weight update (after 24 hours)
-        const lastWeightUpdate = data.lastWeightUpdate?.toDate();
-        const needsWeightUpdate =
-          !lastWeightUpdate || now - lastWeightUpdate > 24 * 60 * 60 * 1000; // 24 hours
-
-        // Check weekly lifestyle update (after 7 days)
-        const lastLifestyleUpdate = data.lastLifestyleUpdate?.toDate();
-        const needsLifestyleUpdate =
-          !lastLifestyleUpdate ||
-          now - lastLifestyleUpdate > 7 * 24 * 60 * 60 * 1000; // 7 days
-
-        // Show modals with delay to avoid overwhelming the user
-        setTimeout(() => {
-          if (needsWeightUpdate) {
-            setShowWeightModal(true);
-          } else if (needsLifestyleUpdate) {
-            setShowLifestyleModal(true);
-          }
-        }, 2000); // Show after 2 seconds
-      }
-    } catch (error) {
-      console.error("Error checking for updates:", error);
+      return () => clearTimeout(timer);
     }
+  }, [pendingUpdates]);
+
+  // Handle modal close and check for next pending update
+  const handleWeightModalClose = () => {
+    setShowWeightModal(false);
+    markUpdateCompleted('needsDailyUpdate');
+    fetchUserData();
+
+    // Check if weekly update is also needed
+    if (pendingUpdates.needsWeeklyUpdate) {
+      setTimeout(() => {
+        setShowLifestyleModal(true);
+      }, 500);
+    }
+  };
+
+  const handleLifestyleModalClose = () => {
+    setShowLifestyleModal(false);
+    markUpdateCompleted('needsWeeklyUpdate');
+    fetchUserData();
   };
 
   const onRefresh = async () => {
@@ -137,14 +144,11 @@ const HomeScreen = ({ navigation }) => {
           />
         }
       >
-        <View style={styles.header}>
-          <Text style={styles.welcome}>Welcome back! 🏋️‍♂️</Text>
-          {userData && (
-            <Text style={styles.userInfo}>
-              {userData.username} • {userData.age}y • {userData.gender}
-            </Text>
-          )}
-        </View>
+        <AnimatedWelcomeSection
+          userName={userData?.username}
+          userAge={userData?.age}
+          userGender={userData?.gender}
+        />
 
         {userData && (
           <View style={styles.statsContainer}>
@@ -181,25 +185,25 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.bmiScale}>
               <View style={styles.bmiScaleItem}>
                 <View
-                  style={[styles.bmiIndicator, { backgroundColor: "#ffa726" }]}
+                  style={[styles.bmiIndicator, { backgroundColor: theme.colors.bmi.underweight }]}
                 />
                 <Text style={styles.bmiScaleText}>Underweight: {"<"}18.5</Text>
               </View>
               <View style={styles.bmiScaleItem}>
                 <View
-                  style={[styles.bmiIndicator, { backgroundColor: "#4caf50" }]}
+                  style={[styles.bmiIndicator, { backgroundColor: theme.colors.bmi.normal }]}
                 />
                 <Text style={styles.bmiScaleText}>Normal: 18.5-24.9</Text>
               </View>
               <View style={styles.bmiScaleItem}>
                 <View
-                  style={[styles.bmiIndicator, { backgroundColor: "#ff9800" }]}
+                  style={[styles.bmiIndicator, { backgroundColor: theme.colors.bmi.overweight }]}
                 />
                 <Text style={styles.bmiScaleText}>Overweight: 25-29.9</Text>
               </View>
               <View style={styles.bmiScaleItem}>
                 <View
-                  style={[styles.bmiIndicator, { backgroundColor: "#f44336" }]}
+                  style={[styles.bmiIndicator, { backgroundColor: theme.colors.bmi.obese }]}
                 />
                 <Text style={styles.bmiScaleText}>Obese: 30+</Text>
               </View>
@@ -266,51 +270,48 @@ const HomeScreen = ({ navigation }) => {
       {/* Modals */}
       <DailyWeightModal
         visible={showWeightModal}
-        onClose={() => {
-          setShowWeightModal(false);
-          fetchUserData();
-        }}
+        onClose={handleWeightModalClose}
       />
 
       <WeeklyLifestyleModal
         visible={showLifestyleModal}
-        onClose={() => {
-          setShowLifestyleModal(false);
-          fetchUserData();
-        }}
+        onClose={handleLifestyleModalClose}
       />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.background,
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    backgroundColor: "#ff6b6b",
+    backgroundColor: theme.colors.primary,
     padding: 30,
     alignItems: "center",
     paddingTop: 50,
+    borderBottomLeftRadius: theme.borderRadius.large,
+    borderBottomRightRadius: theme.borderRadius.large,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "white",
+    color: theme.colors.text,
     marginBottom: 5,
   },
   welcome: {
     fontSize: 18,
-    color: "white",
+    color: theme.colors.text,
     marginBottom: 5,
+    fontWeight: "600",
   },
   userInfo: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.9)",
+    color: theme.colors.textLight,
     marginTop: 5,
   },
   statsContainer: {
@@ -320,29 +321,26 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   statCard: {
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: theme.colors.card,
+    padding: 18,
+    borderRadius: theme.borderRadius.medium,
     alignItems: "center",
     minWidth: 100,
     margin: 5,
     flex: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...theme.shadows.small,
   },
   statNumber: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#ff6b6b",
+    color: theme.colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: "#666",
+    color: theme.colors.textLight,
     marginTop: 5,
     textAlign: "center",
+    fontWeight: "500",
   },
   bmiCategory: {
     fontSize: 10,
@@ -350,21 +348,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bmiInfoCard: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.card,
     margin: 20,
-    padding: 15,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 18,
+    borderRadius: theme.borderRadius.medium,
+    ...theme.shadows.small,
   },
   bmiInfoTitle: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#333",
+    color: theme.colors.text,
   },
   bmiScale: {
     flexDirection: "row",
@@ -385,7 +379,7 @@ const styles = StyleSheet.create({
   },
   bmiScaleText: {
     fontSize: 12,
-    color: "#666",
+    color: theme.colors.textLight,
   },
   quickActions: {
     padding: 20,
@@ -394,35 +388,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 15,
-    color: "#333",
+    color: theme.colors.text,
   },
   actionButton: {
-    backgroundColor: "#4ecdc4",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: theme.colors.secondary,
+    padding: 16,
+    borderRadius: theme.borderRadius.medium,
+    marginBottom: 12,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...theme.shadows.small,
   },
   actionText: {
-    color: "white",
+    color: theme.colors.text,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   userInfoCard: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.card,
     margin: 20,
-    padding: 15,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 18,
+    borderRadius: theme.borderRadius.medium,
+    ...theme.shadows.small,
   },
   infoGrid: {
     flexDirection: "row",
@@ -435,30 +421,27 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: "#666",
+    color: theme.colors.textLight,
     marginBottom: 4,
+    fontWeight: "500",
   },
   infoValue: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#333",
+    color: theme.colors.text,
   },
   logoutButton: {
-    backgroundColor: "#ff4757",
-    padding: 15,
+    backgroundColor: theme.colors.error,
+    padding: 16,
     margin: 20,
-    borderRadius: 10,
+    borderRadius: theme.borderRadius.medium,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...theme.shadows.small,
   },
   logoutText: {
-    color: "white",
+    color: theme.colors.text,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   menuButton: {
     marginLeft: 15,
@@ -466,7 +449,7 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: 20,
-    color: "white",
+    color: theme.colors.text,
     fontWeight: "bold",
   },
 });

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { createStackNavigator } from "@react-navigation/stack";
 import { TouchableOpacity, Text } from "react-native";
 import LoginScreen from "./src/login";
@@ -13,12 +14,16 @@ import ProgressScreen from "./src/ProgressScreen";
 import SettingsScreen from "./src/SettingsScreen";
 import Sidebar from "./src/Sidebar";
 import PredictionScreen from "./src/PredictionScreen";
+import HydrationScreen from "./src/HydrationScreen";
+import LifestyleAdviceScreen from "./src/LifestyleAdviceScreen";
+import { useTheme } from "./context/ThemeContext";
 
 const Stack = createStackNavigator();
 
 const MainStack = () => {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
 
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
@@ -26,23 +31,27 @@ const MainStack = () => {
 
   const screenOptions = {
     headerStyle: {
-      backgroundColor: "#ff6b6b",
+      backgroundColor: theme.colors.primary,
     },
-    headerTintColor: "#fff",
+    headerTintColor: theme.colors.text,
     headerTitleStyle: {
       fontWeight: "bold",
+      color: theme.colors.text,
     },
-    headerLeft: () =>
-      user ? (
+    headerLeft: () => {
+      return user ? (
         <TouchableOpacity
           style={{ marginLeft: 15, padding: 10 }}
-          onPress={toggleSidebar}
+          onPress={() => {
+            toggleSidebar();
+          }}
         >
-          <Text style={{ color: "white", fontSize: 18, fontWeight: "bold" }}>
+          <Text style={{ color: theme.colors.text, fontSize: 18, fontWeight: "bold" }}>
             ☰
           </Text>
         </TouchableOpacity>
-      ) : null,
+      ) : null;
+    },
   };
 
   return (
@@ -53,19 +62,22 @@ const MainStack = () => {
           component={HomeScreen}
           options={{
             title: "HealthMate",
-            headerLeft: () =>
-              user ? (
+            headerLeft: () => {
+              return user ? (
                 <TouchableOpacity
                   style={{ marginLeft: 15, padding: 10 }}
-                  onPress={toggleSidebar}
+                  onPress={() => {
+                    toggleSidebar();
+                  }}
                 >
                   <Text
-                    style={{ color: "white", fontSize: 18, fontWeight: "bold" }}
+                    style={{ color: theme.colors.text, fontSize: 18, fontWeight: "bold" }}
                   >
                     ☰
                   </Text>
                 </TouchableOpacity>
-              ) : null,
+              ) : null;
+            },
           }}
         />
         <Stack.Screen
@@ -89,6 +101,16 @@ const MainStack = () => {
           options={{ title: "AI Recommendations" }}
         />
         <Stack.Screen
+          name="Hydration"
+          component={HydrationScreen}
+          options={{ title: "Hydration Tracker" }}
+        />
+        <Stack.Screen
+          name="LifestyleAdvice"
+          component={LifestyleAdviceScreen}
+          options={{ title: "Daily Inspiration" }}
+        />
+        <Stack.Screen
           name="Settings"
           component={SettingsScreen}
           options={{ title: "Settings" }}
@@ -96,12 +118,15 @@ const MainStack = () => {
       </Stack.Navigator>
 
       {user && (
-        <Sidebar
-          isVisible={sidebarVisible}
-          onClose={() => setSidebarVisible(false)}
-          user={user}
-          logout={logout}
-        />
+        <>
+          {console.log('Rendering Sidebar - sidebarVisible:', sidebarVisible, 'user:', !!user)}
+          <Sidebar
+            isVisible={sidebarVisible}
+            onClose={() => setSidebarVisible(false)}
+            user={user}
+            logout={logout}
+          />
+        </>
       )}
     </>
   );
@@ -126,8 +151,10 @@ const RootNavigator = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
