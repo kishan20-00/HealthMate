@@ -6,19 +6,29 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Alert,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../config";
 import { apiService } from "../services/api";
 
+// Define required fields for each prediction type for validation
+const REQUIRED_FIELDS = {
+    base: ['age', 'gender', 'activity_level', 'bmi_status', 'bmi'],
+    workout: ['duration_minutes', 'calories_burned'],
+    lifestyle: ['sleep_hours', 'water_intake_liters', 'stress_level', 'screen_time_hours'],
+    meal: ['goal', 'meal_type'],
+};
+
 const PredictionScreen = () => {
   const { user } = useAuth();
+  const { theme } = useTheme(); 
+  const styles = createStyles(theme); 
+
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,138 +39,213 @@ const PredictionScreen = () => {
     meal: null,
   });
 
-  // Workout form state
-  const [workoutForm, setWorkoutForm] = useState({
-    duration_minutes: "45",
-    calories_burned: "300",
-  });
-
-  // Lifestyle form state
-  const [lifestyleForm, setLifestyleForm] = useState({
-    sleep_hours: "",
-    recommended_sleep: "8.0",
-    water_intake_liters: "",
-    stress_level: "Moderate",
-    screen_time_hours: "",
-  });
-
-  // Meal form state
-  const [mealForm, setMealForm] = useState({
-    bmi_status: "Normal",
-    goal: "Maintenance",
-    meal_type: "Lunch",
-  });
-
+  // State to hold the necessary input data for API calls, pre-filled from DB
+  const [apiInputData, setApiInputData] = useState(null);
+  
+  // --- Data Fetching and Auto-Trigger Logic ---
   useEffect(() => {
-    fetchUserData();
+    if (user) {
+      fetchUserData();
+    }
   }, [user]);
 
+  useEffect(() => {
+      // Automatically run predictions after user data and last inputs are ready
+      if (apiInputData && !loading) {
+          handleAutoPrediction();
+      } else if (!apiInputData && !loading) {
+          // Set loading to false if no input data, preventing infinite loading state
+          setLoading(false); 
+      }
+  }, [apiInputData]);
+
+  const calculateBMI = (weight, height) => {
+    if (!weight || !height) return 22.5; // Default BMI
+    const heightInMeters = height / 100;
+    return (weight / (heightInMeters * heightInMeters)).toFixed(1);
+  };
+
+  const getBMICategory = (bmiValue) => {
+    const bmi = parseFloat(bmiValue);
+    if (bmi < 18.5) return "Underweight";
+    if (bmi < 25) return "Normal";
+    if (bmi < 30) return "Overweight";
+    return "Obese";
+  };
+
   const fetchUserData = async () => {
+    setLoading(true);
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
         setUserData(data);
 
-        // Pre-fill lifestyle form with user data
-        setLifestyleForm((prev) => ({
-          ...prev,
-          sleep_hours: data.sleepHours?.toString() || "",
-          water_intake_liters: "2.0", // Default value
-        }));
+        const currentWeight = data.currentWeight || data.weight;
+        const height = data.height;
+        const currentBMI = calculateBMI(currentWeight, height);
+        const bmiStatus = getBMICategory(currentBMI);
+        
+        const aiRecs = data.aiRecommendations || {};
+        const runRecords = data.runHistory || []; // Ensure array fallback
+        const hydrationData = data.hydrationData || {};
+        const screenTimeHistory = data.screenTimeHistory || []; // Ensure array fallback
+        const foodHistory = data.foodHistory || []; // Ensure array fallback
+
+        const dateKeys = Object.keys(hydrationData);
+        dateKeys.sort(); 
+        const latestDateKey = dateKeys[dateKeys.length - 1]; 
+        const latestRecord = hydrationData[latestDateKey] || {};
+
+        // Set initial predictions state with the latest results (for quick display)
+        setPredictions({
+          workout: aiRecs.workout || null,
+          lifestyle: aiRecs.lifestyle || null,
+          meal: aiRecs.meal || null,
+        });
+
+        // Extract last successful input data or use profile/default values
+        const wIn = runRecords[runRecords.length - 1] || {};
+        // Lifestyle input from profile or previous successful prediction
+        // Using profile data directly for sleep, activity, health conditions
+        // Using latest tracking data for water/screen time
+        const sIn = screenTimeHistory[screenTimeHistory.length - 1] || {};
+        const fIn = foodHistory[foodHistory.length - 1] || {};
+
+        // Prepare the standardized input data object for API calls
+        // Use ?? to default to null if the value is missing or 0, making validation easier
+        // Note: parseInt/parseFloat on null/undefined/non-numeric gives NaN, so we handle that
+        const waterIntake = parseFloat(latestRecord.cups) ? (latestRecord.cups * 200 / 1000).toFixed(1) : null;
+        const screenTime = parseFloat(sIn.screen_time_hours);
+        const workoutDuration = parseInt(wIn.duration_minutes);
+        const caloriesBurned = parseInt(wIn.calories_burned);
+
+        setApiInputData({
+            // Base User Data - CRITICAL FOR ALL
+            age: data.age ?? null,
+            gender: data.gender ?? null,
+            activity_level: data.activityLevel || "Medium", // Has default
+            health_condition: data.healthConditions || "None", // Has default
+            bmi_status: bmiStatus,
+            bmi: parseFloat(currentBMI),
+
+            // Workout Defaults (Last successful run or default values)
+            workout: {
+                // Must be a number for API, null if not available
+                duration_minutes: isNaN(workoutDuration) ? null : workoutDuration,
+                calories_burned: isNaN(caloriesBurned) ? null : caloriesBurned,
+            },
+
+            // Lifestyle Defaults
+            lifestyle: {
+                sleep_hours: parseFloat(data.sleepHours) ?? null,
+                recommended_sleep: 8.0, // Fixed
+                water_intake_liters: parseFloat(waterIntake) ?? null,
+                stress_level: data.stressLevel || "Moderate", // Check DB, use moderate if missing
+                screen_time_hours: isNaN(screenTime) ? null : screenTime,
+            },
+
+            // Meal Defaults 
+            meal: {
+                goal: fIn.goal ?? null,
+                meal_type: fIn.meal_type ?? null,
+            }
+        });
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
+      Alert.alert("Error", "Failed to load user data for prediction.");
+    } finally {
+        // The auto-prediction useEffect will set loading to false after data is ready/not ready
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchUserData();
+    setPredictions({ workout: null, lifestyle: null, meal: null }); 
+    await fetchUserData(); 
     setRefreshing(false);
   };
+  
+  // Helper to structure input data for API (using pre-filled apiInputData)
+  const getPredictionInputData = (type) => {
+      if (!apiInputData) {
+          return { missingData: true, reason: 'Profile data is missing.' };
+      }
+      
+      const input = {};
+      const requiredBase = REQUIRED_FIELDS.base;
+      const requiredType = REQUIRED_FIELDS[type];
+      const missingFields = [];
 
-  const calculateBMI = () => {
-    if (!userData) return null;
-    const weight = userData.currentWeight || userData.weight;
-    const height = userData.height;
-    if (!weight || !height) return null;
+      // Combine base and type-specific required fields
+      const allRequired = [...requiredBase];
+      if (type === 'workout') {
+          // Workout needs base + workout fields
+          allRequired.push(...REQUIRED_FIELDS.workout);
+          Object.assign(input, apiInputData.workout);
+      } else if (type === 'lifestyle') {
+          // Lifestyle needs base + lifestyle fields
+          allRequired.push(...REQUIRED_FIELDS.lifestyle.filter(f => f !== 'stress_level')); // Stress has a default
+          Object.assign(input, apiInputData.lifestyle);
+      } else if (type === 'meal') {
+          // Meal needs base + meal fields
+          allRequired.push(...REQUIRED_FIELDS.meal);
+          Object.assign(input, apiInputData.meal);
+      }
 
-    const heightInMeters = height / 100;
-    return (weight / (heightInMeters * heightInMeters)).toFixed(1);
-  };
+      // Add base data to the input object
+      Object.assign(input, {
+          age: apiInputData.age,
+          gender: apiInputData.gender,
+          activity_level: apiInputData.activity_level,
+          health_condition: apiInputData.health_condition,
+          bmi_status: apiInputData.bmi_status,
+          bmi: apiInputData.bmi,
+      });
 
-  const getWorkoutInputData = () => {
-    if (!userData) return null;
+      // 1. Validation Check: Ensure all required fields have valid values
+      for (const field of allRequired) {
+          // Check if value is null, undefined, or NaN (from parseInt/parseFloat on missing data)
+          const value = input[field];
+          if (value === null || value === undefined || (typeof value === 'number' && isNaN(value)) || value === '') {
+              missingFields.push(field);
+          }
+      }
+      
+      if (missingFields.length > 0) {
+          return { 
+              missingData: true, 
+              reason: `Missing fields: ${missingFields.join(', ')}. Please update your profile or activity data.`,
+              missingFields: missingFields 
+          };
+      }
 
-    return {
-      age: userData.age,
-      gender: userData.gender,
-      bmi: parseFloat(calculateBMI()) || 22.5,
-      activity_level: userData.activityLevel || "Medium",
-      health_condition: userData.healthConditions || "None",
-      duration_minutes: parseInt(workoutForm.duration_minutes) || 45,
-      calories_burned: parseInt(workoutForm.calories_burned) || 300,
-    };
-  };
+      // 2. Return validated, structured input data
+      return input;
+  }
 
-  const getLifestyleInputData = () => {
-    if (!userData) return null;
-
-    return {
-      age: userData.age,
-      gender: userData.gender,
-      sleep_hours: parseFloat(lifestyleForm.sleep_hours) || 7.0,
-      recommended_sleep: parseFloat(lifestyleForm.recommended_sleep) || 8.0,
-      water_intake_liters: parseFloat(lifestyleForm.water_intake_liters) || 2.0,
-      stress_level: lifestyleForm.stress_level,
-      screen_time_hours: parseFloat(lifestyleForm.screen_time_hours) || 5.0,
-    };
-  };
-
-  const getMealInputData = () => {
-    if (!userData) return null;
-
-    return {
-      age: userData.age,
-      gender: userData.gender,
-      bmi_status: mealForm.bmi_status,
-      goal: mealForm.goal,
-      meal_type: mealForm.meal_type,
-    };
-  };
-
-  const storeRecommendation = async (type, result) => {
+  // Store recommendation helper (unchanged)
+  const storeRecommendation = async (type, result, inputData) => {
     try {
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
       const userData = userDoc.exists() ? userDoc.data() : {};
 
-      // Get existing recommendations
       const aiRecommendations = userData.aiRecommendations || {};
-
-      // Store the new recommendation with timestamp
-      aiRecommendations[type] = {
-        ...result,
-        timestamp: new Date(),
-        inputData: type === 'workout' ? getWorkoutInputData() :
-                  type === 'lifestyle' ? getLifestyleInputData() :
-                  getMealInputData(),
-      };
-
-      // Keep only the latest 5 recommendations per type
       const recommendationHistory = userData.recommendationHistory || {};
       if (!recommendationHistory[type]) {
         recommendationHistory[type] = [];
       }
 
-      recommendationHistory[type].unshift({
-        ...result,
-        timestamp: new Date(),
-        inputData: type === 'workout' ? getWorkoutInputData() :
-                  type === 'lifestyle' ? getLifestyleInputData() :
-                  getMealInputData(),
-      });
+      const record = {
+          ...result,
+          timestamp: new Date(), // Use client-side date for array element
+          inputData: inputData,
+      };
+
+      aiRecommendations[type] = record;
+      recommendationHistory[type].unshift(record);
 
       // Keep only latest 5 entries
       if (recommendationHistory[type].length > 5) {
@@ -170,36 +255,45 @@ const PredictionScreen = () => {
       await updateDoc(userDocRef, {
         aiRecommendations,
         recommendationHistory,
-        lastAIRecommendationUpdate: new Date(),
+        lastAIRecommendationUpdate: serverTimestamp(), 
       });
 
     } catch (error) {
       console.error("Error storing recommendation:", error);
-      // Don't show error to user as the main functionality still works
     }
   };
 
   const handlePrediction = async (type) => {
-    if (!userData) {
-      Alert.alert("Error", "Please complete your profile first");
-      return;
+    const inputData = getPredictionInputData(type);
+    
+    if (inputData.missingData) {
+        // Set prediction state to an object indicating missing data to be rendered
+        setPredictions((prev) => ({
+            ...prev,
+            [type]: { status: "missing_input", error: inputData.reason },
+        }));
+        return; 
     }
 
-    setLoading(true);
+    // Check if the current prediction is an error/missing state, and skip loading if it's already there
+    const isErrorState = predictions[type]?.status === "missing_input" || predictions[type] === null;
+
+    // Skip showing loading indicator for auto-run if a successful prediction already exists
+    const shouldShowLoading = !predictions[type] || isErrorState;
+
+    if (shouldShowLoading) setLoading(true);
+
     try {
-      let inputData, result;
+      let result;
 
       switch (type) {
         case "workout":
-          inputData = getWorkoutInputData();
           result = await apiService.getWorkoutRecommendation(inputData);
           break;
         case "lifestyle":
-          inputData = getLifestyleInputData();
           result = await apiService.getLifestyleRecommendation(inputData);
           break;
         case "meal":
-          inputData = getMealInputData();
           result = await apiService.getMealRecommendation(inputData);
           break;
         default:
@@ -212,284 +306,151 @@ const PredictionScreen = () => {
           [type]: result,
         }));
 
-        // Store the recommendation in the database
-        await storeRecommendation(type, result);
-
-        Alert.alert(
-          "Success",
-          `${
-            type.charAt(0).toUpperCase() + type.slice(1)
-          } recommendation generated!`
-        );
+        await storeRecommendation(type, result, inputData);
       } else {
-        Alert.alert("Error", result.error || "Prediction failed");
+        // API returned an error/failure
+        setPredictions((prev) => ({
+            ...prev,
+            [type]: { status: "api_error", error: result.error || `Failed to get ${type} recommendation.` },
+        }));
+        Alert.alert("Prediction Error", result.error || `Failed to get ${type} recommendation.`);
       }
     } catch (error) {
       console.error("Prediction error:", error);
+      // Catch network/service call error
+      setPredictions((prev) => ({
+          ...prev,
+          [type]: { status: "service_error", error: "Failed to communicate with prediction service." },
+      }));
       Alert.alert(
         "Error",
-        "Failed to get recommendation. Please check your connection."
+        "Failed to communicate with prediction service."
       );
+    } finally {
+        if (shouldShowLoading) setLoading(false);
     }
-    setLoading(false);
   };
+
+  // --- New function to handle running all predictions automatically ---
+  const handleAutoPrediction = () => {
+      // Run prediction for the active tab first, then run the rest silently
+      handlePrediction(activeTab);
+      setLoading(false);
+  }
+
+  // --- Simplified Render Functions ---
+
+  const renderPredictionResult = (type, predictionData) => {
+      
+      // 1. Loading state (only show if we don't have existing data)
+      if (loading && (!predictionData || predictionData.status === "missing_input" || predictionData.status === "api_error" || predictionData.status === "service_error")) {
+          return (
+              <View style={styles.loadingResultContainer}>
+                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                  <Text style={styles.loadingResultText}>Generating new recommendation...</Text>
+              </View>
+          );
+      }
+      
+      // 2. Missing Input Data / Error State
+      if (!predictionData || predictionData.status === "missing_input" || predictionData.status === "api_error" || predictionData.status === "service_error") {
+          
+          const isMissing = predictionData?.status === "missing_input";
+          const message = isMissing 
+              ? predictionData.error || "Insufficient data in your profile for this prediction."
+              : predictionData?.error || "No recent prediction found or failed to generate.";
+          
+          return (
+              <View style={[styles.noResultContainer, isMissing && styles.missingInputContainer]}>
+                  <Text style={styles.noResultEmoji}>{isMissing ? '❌' : '⚠️'}</Text>
+                  <Text style={styles.noResultText}>
+                      <Text style={{fontWeight: theme.typography.weights.bold}}>{isMissing ? 'Data Required: ' : 'Prediction Failed: '}</Text>
+                      {message}
+                  </Text>
+                  <TouchableOpacity 
+                      style={styles.retryButton} 
+                      onPress={() => handlePrediction(type)}
+                      disabled={loading || isMissing} // Disable retry if data is missing
+                  >
+                      <Text style={styles.retryButtonText}>
+                          {isMissing ? 'Cannot Run Prediction' : 'Retry Prediction Now'}
+                      </Text>
+                  </TouchableOpacity>
+              </View>
+          );
+      }
+
+      // 3. Successful Result
+      const mainResult = predictionData.recommended_workout || predictionData.recommendation || predictionData.recommended_meal;
+      const confidence = predictionData.confidence;
+      const calories = predictionData.estimated_calories;
+
+      return (
+          <View style={styles.resultContainer}>
+              <Text style={styles.resultTitle}>
+                  {type === 'workout' ? 'Recommended Workout' : type === 'lifestyle' ? 'Lifestyle Recommendation' : 'Meal Recommendation'}
+              </Text>
+              <Text style={styles.resultMain}>{mainResult}</Text>
+
+              {calories && (
+                  <Text style={styles.confidence}>Estimated Calories: {calories}</Text>
+              )}
+              {confidence && (
+                  <Text style={styles.confidence}>Confidence: {(confidence * 100).toFixed(1)}%</Text>
+              )}
+
+              {predictionData.top_recommendations?.length > 0 && (
+                  <>
+                      <Text style={styles.subResultTitle}>Top Recommendations:</Text>
+                      {predictionData.top_recommendations.map((rec, index) => (
+                          <Text key={index} style={styles.subResult}>
+                              <Text style={styles.subResultNumber}>{index + 1}.</Text>
+                              <Text> {rec.workout || rec.meal}</Text>
+                              <Text style={styles.subResultConfidence}> ({((rec.confidence || 0) * 100).toFixed(1)}%)</Text>
+                          </Text>
+                      ))}
+                  </>
+              )}
+          </View>
+      );
+  };
+  
+  // The render functions (renderWorkoutTab, renderLifestyleTab, renderMealTab) 
+  // are essentially unchanged, as the rendering logic is all in renderPredictionResult.
 
   const renderWorkoutTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Workout Recommendation</Text>
-      <Text style={styles.description}>
-        Get personalized workout recommendations based on your profile and
-        preferences.
-      </Text>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Duration (minutes)</Text>
-        <TextInput
-          style={styles.input}
-          value={workoutForm.duration_minutes}
-          onChangeText={(text) =>
-            setWorkoutForm((prev) => ({ ...prev, duration_minutes: text }))
-          }
-          keyboardType="numeric"
-          placeholder="45"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Calories Target</Text>
-        <TextInput
-          style={styles.input}
-          value={workoutForm.calories_burned}
-          onChangeText={(text) =>
-            setWorkoutForm((prev) => ({ ...prev, calories_burned: text }))
-          }
-          keyboardType="numeric"
-          placeholder="300"
-        />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.predictButton, loading && styles.buttonDisabled]}
-        onPress={() => handlePrediction("workout")}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.predictButtonText}>
-            Get Workout Recommendation
-          </Text>
-        )}
-      </TouchableOpacity>
-
-      {predictions.workout && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultTitle}>Recommended Workout</Text>
-          <Text style={styles.resultMain}>
-            {predictions.workout.recommended_workout}
-          </Text>
-          <Text style={styles.confidence}>
-            Confidence: {(predictions.workout.confidence * 100).toFixed(1)}%
-          </Text>
-
-          <Text style={styles.subResultTitle}>Top Recommendations:</Text>
-          {predictions.workout.top_recommendations?.map((rec, index) => (
-            <Text key={index} style={styles.subResult}>
-              {index + 1}. {rec.workout} ({(rec.confidence * 100).toFixed(1)}%)
-            </Text>
-          ))}
-        </View>
-      )}
+        <Text style={styles.sectionTitle}>
+            <Text>💪 Workout Prediction</Text>
+        </Text>
+        <Text style={styles.description}>
+            <Text>Automatically generated routine based on your latest profile data (Duration: {apiInputData?.workout?.duration_minutes ?? 'N/A'} min, Calories: {apiInputData?.workout?.calories_burned ?? 'N/A'}).</Text>
+        </Text>
+        {renderPredictionResult("workout", predictions.workout)}
     </View>
   );
 
   const renderLifestyleTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Lifestyle Recommendation</Text>
-      <Text style={styles.description}>
-        Get personalized lifestyle recommendations to improve your daily habits.
-      </Text>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Sleep Hours (actual)</Text>
-        <TextInput
-          style={styles.input}
-          value={lifestyleForm.sleep_hours}
-          onChangeText={(text) =>
-            setLifestyleForm((prev) => ({ ...prev, sleep_hours: text }))
-          }
-          keyboardType="numeric"
-          placeholder="7.0"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Recommended Sleep Hours</Text>
-        <TextInput
-          style={styles.input}
-          value={lifestyleForm.recommended_sleep}
-          onChangeText={(text) =>
-            setLifestyleForm((prev) => ({ ...prev, recommended_sleep: text }))
-          }
-          keyboardType="numeric"
-          placeholder="8.0"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Water Intake (liters)</Text>
-        <TextInput
-          style={styles.input}
-          value={lifestyleForm.water_intake_liters}
-          onChangeText={(text) =>
-            setLifestyleForm((prev) => ({ ...prev, water_intake_liters: text }))
-          }
-          keyboardType="numeric"
-          placeholder="2.0"
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Stress Level</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={lifestyleForm.stress_level}
-            onValueChange={(value) =>
-              setLifestyleForm((prev) => ({ ...prev, stress_level: value }))
-            }
-          >
-            <Picker.Item label="Low" value="Low" />
-            <Picker.Item label="Moderate" value="Moderate" />
-            <Picker.Item label="High" value="High" />
-          </Picker>
-        </View>
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Screen Time (hours)</Text>
-        <TextInput
-          style={styles.input}
-          value={lifestyleForm.screen_time_hours}
-          onChangeText={(text) =>
-            setLifestyleForm((prev) => ({ ...prev, screen_time_hours: text }))
-          }
-          keyboardType="numeric"
-          placeholder="5.0"
-        />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.predictButton, loading && styles.buttonDisabled]}
-        onPress={() => handlePrediction("lifestyle")}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.predictButtonText}>
-            Get Lifestyle Recommendation
-          </Text>
-        )}
-      </TouchableOpacity>
-
-      {predictions.lifestyle && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultTitle}>Lifestyle Recommendation</Text>
-          <Text style={styles.resultMain}>
-            {predictions.lifestyle.recommendation}
-          </Text>
-          <Text style={styles.confidence}>
-            Confidence: {(predictions.lifestyle.confidence * 100).toFixed(1)}%
-          </Text>
-        </View>
-      )}
+        <Text style={styles.sectionTitle}>
+            <Text>🌱 Lifestyle Prediction</Text>
+        </Text>
+        <Text style={styles.description}>
+            <Text>Automatically generated tips based on your profile and habits (Sleep: {apiInputData?.lifestyle?.sleep_hours ?? 'N/A'}h, Water: {apiInputData?.lifestyle?.water_intake_liters ?? 'N/A'}L).</Text>
+        </Text>
+        {renderPredictionResult("lifestyle", predictions.lifestyle)}
     </View>
   );
 
   const renderMealTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Meal Recommendation</Text>
-      <Text style={styles.description}>
-        Get personalized meal recommendations based on your goals and
-        preferences.
-      </Text>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>BMI Status</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={mealForm.bmi_status}
-            onValueChange={(value) =>
-              setMealForm((prev) => ({ ...prev, bmi_status: value }))
-            }
-          >
-            <Picker.Item label="Underweight" value="Underweight" />
-            <Picker.Item label="Normal" value="Normal" />
-            <Picker.Item label="Overweight" value="Overweight" />
-            <Picker.Item label="Obese" value="Obese" />
-          </Picker>
-        </View>
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Goal</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={mealForm.goal}
-            onValueChange={(value) =>
-              setMealForm((prev) => ({ ...prev, goal: value }))
-            }
-          >
-            <Picker.Item label="Weight Loss" value="Weight Loss" />
-            <Picker.Item label="Maintenance" value="Maintenance" />
-            <Picker.Item label="Muscle Gain" value="Muscle Gain" />
-          </Picker>
-        </View>
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Meal Type</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={mealForm.meal_type}
-            onValueChange={(value) =>
-              setMealForm((prev) => ({ ...prev, meal_type: value }))
-            }
-          >
-            <Picker.Item label="Breakfast" value="Breakfast" />
-            <Picker.Item label="Lunch" value="Lunch" />
-            <Picker.Item label="Dinner" value="Dinner" />
-            <Picker.Item label="Snack" value="Snack" />
-          </Picker>
-        </View>
-      </View>
-
-      <TouchableOpacity
-        style={[styles.predictButton, loading && styles.buttonDisabled]}
-        onPress={() => handlePrediction("meal")}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.predictButtonText}>Get Meal Recommendation</Text>
-        )}
-      </TouchableOpacity>
-
-      {predictions.meal && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultTitle}>Meal Recommendation</Text>
-          <Text style={styles.resultMain}>
-            {predictions.meal.recommended_meal}
-          </Text>
-          <Text style={styles.confidence}>
-            Estimated Calories: {predictions.meal.estimated_calories}
-          </Text>
-          <Text style={styles.confidence}>
-            Confidence: {(predictions.meal.confidence * 100).toFixed(1)}%
-          </Text>
-        </View>
-      )}
+        <Text style={styles.sectionTitle}>
+            <Text>🍽️ Meal Prediction</Text>
+        </Text>
+        <Text style={styles.description}>
+            <Text>Automatically generated meal based on your profile and goals (Goal: {apiInputData?.meal?.goal ?? 'N/A'}, Type: {apiInputData?.meal?.meal_type ?? 'N/A'}).</Text>
+        </Text>
+        {renderPredictionResult("meal", predictions.meal)}
     </View>
   );
 
@@ -500,15 +461,15 @@ const PredictionScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#ff6b6b"]}
-            tintColor="#ff6b6b"
+            colors={[theme.colors.primary]} // Use theme color
+            tintColor={theme.colors.primary}
           />
         }
       >
         <View style={styles.header}>
-          <Text style={styles.title}>AI Recommendations</Text>
+          <Text style={styles.title}><Text>🤖 AI Recommendations</Text></Text>
           <Text style={styles.subtitle}>
-            Get personalized recommendations using AI
+            <Text>Personalized recommendations using AI</Text>
           </Text>
         </View>
 
@@ -516,41 +477,26 @@ const PredictionScreen = () => {
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === "workout" && styles.activeTab]}
-            onPress={() => setActiveTab("workout")}
+            onPress={() => { setActiveTab("workout"); handlePrediction("workout"); }} // Trigger prediction on tab switch
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "workout" && styles.activeTabText,
-              ]}
-            >
-              💪 Workout
+            <Text style={[styles.tabText, activeTab === "workout" && styles.activeTabText]}>
+              <Text>💪 Workout</Text>
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === "lifestyle" && styles.activeTab]}
-            onPress={() => setActiveTab("lifestyle")}
+            onPress={() => { setActiveTab("lifestyle"); handlePrediction("lifestyle"); }}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "lifestyle" && styles.activeTabText,
-              ]}
-            >
-              🌱 Lifestyle
+            <Text style={[styles.tabText, activeTab === "lifestyle" && styles.activeTabText]}>
+              <Text>🌱 Lifestyle</Text>
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === "meal" && styles.activeTab]}
-            onPress={() => setActiveTab("meal")}
+            onPress={() => { setActiveTab("meal"); handlePrediction("meal"); }}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "meal" && styles.activeTabText,
-              ]}
-            >
-              🍽️ Meal
+            <Text style={[styles.tabText, activeTab === "meal" && styles.activeTabText]}>
+              <Text>🍽️ Meal</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -563,13 +509,12 @@ const PredictionScreen = () => {
         {/* User Info Summary */}
         {userData && (
           <View style={styles.userSummary}>
-            <Text style={styles.summaryTitle}>Your Profile Summary</Text>
+            <Text style={styles.summaryTitle}><Text>Your Profile Summary (used for AI)</Text></Text>
             <Text style={styles.summaryText}>
-              Age: {userData.age} • Gender: {userData.gender} • BMI:{" "}
-              {calculateBMI()}
+              <Text>Age: {userData.age} • Gender: {userData.gender} • BMI: {calculateBMI(userData.currentWeight || userData.weight, userData.height)}</Text>
             </Text>
             <Text style={styles.summaryText}>
-              Activity: {userData.activityLevel} • Sleep: {userData.sleepHours}h
+              <Text>Activity: {userData.activityLevel} • Sleep: {userData.sleepHours}h</Text>
             </Text>
           </View>
         )}
@@ -578,173 +523,183 @@ const PredictionScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  header: {
-    backgroundColor: "#A8E6CF",
-    padding: 20,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "black",
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "gray",
-  },
-  tabContainer: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 10,
-    overflow: "hidden",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  tab: {
-    flex: 1,
-    padding: 15,
-    alignItems: "center",
-  },
-  activeTab: {
-    backgroundColor: "#4ecdc4",
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-  },
-  activeTabText: {
-    color: "white",
-  },
-  tabContent: {
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  description: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  formGroup: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 5,
-    marginLeft: 5,
-  },
-  input: {
-    backgroundColor: "white",
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    fontSize: 16,
-  },
-  pickerContainer: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    overflow: "hidden",
-  },
-  predictButton: {
-    backgroundColor: "#4ecdc4",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: "#ccc",
-  },
-  predictButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  resultContainer: {
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  resultTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  resultMain: {
-    fontSize: 16,
-    color: "#ff6b6b",
-    fontWeight: "600",
-    marginBottom: 5,
-  },
-  confidence: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
-  },
-  subResultTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  subResult: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 3,
-  },
-  userSummary: {
-    backgroundColor: "white",
-    margin: 20,
-    padding: 15,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
-  },
+// --- Styles using theme ---
+const createStyles = (theme) => StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background || "#f5f5f5", 
+    },
+    header: {
+        backgroundColor: theme.colors.primary || "#A8E6CF",
+        padding: theme.spacing.xl || 20,
+        alignItems: "center",
+        borderBottomLeftRadius: theme.borderRadius.large || 10, 
+        borderBottomRightRadius: theme.borderRadius.large || 10,
+    },
+    title: {
+        fontSize: theme.typography.sizes.title || 24,
+        fontWeight: theme.typography.weights.bold || "bold",
+        color: theme.colors.text || "black",
+        marginBottom: theme.spacing.sm || 5,
+    },
+    subtitle: {
+        fontSize: theme.typography.sizes.md || 14,
+        color: theme.colors.textLight || "gray",
+    },
+    tabContainer: {
+        flexDirection: "row",
+        backgroundColor: theme.colors.card || "white",
+        marginHorizontal: theme.spacing.lg || 20,
+        marginTop: theme.spacing.lg || 20,
+        borderRadius: theme.borderRadius.medium || 10,
+        overflow: "hidden",
+        ...theme.shadows.medium,
+    },
+    tab: {
+        flex: 1,
+        padding: theme.spacing.md || 15,
+        alignItems: "center",
+    },
+    activeTab: {
+        backgroundColor: theme.colors.secondary || "#4ecdc4",
+    },
+    tabText: {
+        fontSize: theme.typography.sizes.md || 14,
+        fontWeight: theme.typography.weights.medium || "600",
+        color: theme.colors.textLight || "#666",
+    },
+    activeTabText: {
+        color: theme.colors.text || "white",
+    },
+    tabContent: {
+        padding: theme.spacing.lg || 20,
+    },
+    sectionTitle: {
+        fontSize: theme.typography.sizes.xl || 22,
+        fontWeight: theme.typography.weights.bold || "bold",
+        color: theme.colors.text || "#333",
+        marginBottom: theme.spacing.sm || 10,
+    },
+    description: {
+        fontSize: theme.typography.sizes.md || 14,
+        color: theme.colors.textLight || "#666",
+        marginBottom: theme.spacing.lg || 20,
+        lineHeight: 20,
+    },
+    // --- Result Styles ---
+    resultContainer: {
+        backgroundColor: theme.colors.card || "white",
+        padding: theme.spacing.lg || 15,
+        borderRadius: theme.borderRadius.medium || 10,
+        marginTop: theme.spacing.sm || 10,
+        ...theme.shadows.small,
+    },
+    resultTitle: {
+        fontSize: theme.typography.sizes.lg || 18,
+        fontWeight: theme.typography.weights.bold || "bold",
+        color: theme.colors.text || "#333",
+        marginBottom: theme.spacing.sm || 10,
+    },
+    resultMain: {
+        fontSize: theme.typography.sizes.md || 16,
+        color: theme.colors.primary || "#ff6b6b",
+        fontWeight: theme.typography.weights.semibold || "600",
+        marginBottom: theme.spacing.xs || 5,
+        lineHeight: 22,
+    },
+    confidence: {
+        fontSize: theme.typography.sizes.sm || 14,
+        color: theme.colors.textLight || "#666",
+        marginBottom: theme.spacing.xs || 5,
+    },
+    subResultTitle: {
+        fontSize: theme.typography.sizes.sm || 14,
+        fontWeight: theme.typography.weights.semibold || "600",
+        color: theme.colors.text || "#333",
+        marginTop: theme.spacing.md || 10,
+        marginBottom: theme.spacing.xs || 5,
+    },
+    subResult: {
+        fontSize: theme.typography.sizes.xs || 13,
+        color: theme.colors.textLight || "#666",
+        marginBottom: 3,
+        // Since this uses nested Text components, ensure wrapping for safety
+    },
+    subResultNumber: {
+        fontWeight: theme.typography.weights.bold,
+        color: theme.colors.secondary,
+        marginRight: 5,
+    },
+    subResultConfidence: {
+        fontStyle: 'italic',
+        color: theme.colors.textLight,
+    },
+    loadingResultContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: theme.spacing.xl,
+        backgroundColor: theme.colors.card,
+        borderRadius: theme.borderRadius.medium,
+        ...theme.shadows.small,
+    },
+    loadingResultText: {
+        marginTop: theme.spacing.md,
+        color: theme.colors.textLight,
+        fontSize: theme.typography.sizes.md,
+    },
+    noResultContainer: {
+        alignItems: 'center',
+        padding: theme.spacing.xl,
+        backgroundColor: theme.colors.card,
+        borderRadius: theme.borderRadius.medium,
+        ...theme.shadows.small,
+        borderLeftWidth: 3,
+        borderLeftColor: theme.colors.error,
+    },
+    missingInputContainer: {
+        borderLeftColor: theme.colors.accent || 'orange', // New color for missing data
+    },
+    noResultEmoji: {
+        fontSize: 32,
+        marginBottom: theme.spacing.sm,
+    },
+    noResultText: {
+        fontSize: theme.typography.sizes.md,
+        color: theme.colors.textLight,
+        marginBottom: theme.spacing.md,
+        textAlign: 'center', // Center the error message
+    },
+    retryButton: {
+        backgroundColor: theme.colors.primary,
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.borderRadius.small,
+    },
+    retryButtonText: {
+        color: theme.colors.text,
+        fontWeight: theme.typography.weights.semibold,
+        fontSize: theme.typography.sizes.md,
+    },
+    userSummary: {
+        backgroundColor: theme.colors.card || "white",
+        margin: theme.spacing.lg || 20,
+        padding: theme.spacing.md || 15,
+        borderRadius: theme.borderRadius.medium || 10,
+        ...theme.shadows.small,
+        borderLeftWidth: 3,
+        borderLeftColor: theme.colors.accent,
+    },
+    summaryTitle: {
+        fontSize: theme.typography.sizes.md || 16,
+        fontWeight: theme.typography.weights.bold || "bold",
+        color: theme.colors.text || "#333",
+        marginBottom: theme.spacing.sm || 10,
+    },
+    summaryText: {
+        fontSize: theme.typography.sizes.sm || 14,
+        color: theme.colors.textLight || "#666",
+        marginBottom: theme.spacing.xs || 5,
+    },
 });
 
 export default PredictionScreen;

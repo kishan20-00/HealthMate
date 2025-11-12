@@ -17,6 +17,9 @@ import PredictionScreen from "./src/PredictionScreen";
 import HydrationScreen from "./src/HydrationScreen";
 import LifestyleAdviceScreen from "./src/LifestyleAdviceScreen";
 import { useTheme } from "./context/ThemeContext";
+import RunTrackerScreen from "./src/RunScreen";
+import ScreenTimeTrackerScreen from "./src/ScreenTimeTracker";
+import FoodTrackerScreen from "./src/GoalTracker";
 
 const Stack = createStackNavigator();
 
@@ -104,6 +107,21 @@ const MainStack = () => {
           name="Hydration"
           component={HydrationScreen}
           options={{ title: "Hydration Tracker" }}
+        />
+        <Stack.Screen
+          name="Run"
+          component={RunTrackerScreen}
+          options={{ title: "Run Tracker" }}
+        />
+        <Stack.Screen
+          name="ScreenTime"
+          component={ScreenTimeTrackerScreen}
+          options={{ title: "Screen Time Tracker" }}
+        />
+        <Stack.Screen
+          name="FoodTracker"
+          component={FoodTrackerScreen}
+          options={{ title: "Goal Tracker" }}
         />
         <Stack.Screen
           name="LifestyleAdvice"
