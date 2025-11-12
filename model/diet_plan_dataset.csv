@@ -1,0 +1,201 @@
+user_id,age,gender,bmi_status,goal,meal_type,meal_items,calories,protein_g,carbs_g,fats_g
+1,23,Female,Underweight,Muscle Gain,Lunch,Kottu,700,25,90,25
+2,30,Female,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+3,23,Female,Normal,Maintenance,Lunch,Kottu,700,25,90,25
+4,18,Male,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+5,28,Female,Normal,Maintenance,Lunch,Kottu,700,25,90,25
+6,25,Female,Underweight,Muscle Gain,Dinner,Hoppers,400,10,60,10
+7,28,Female,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20
+8,25,Male,Underweight,Muscle Gain,Breakfast,Milk Rice,300,7,50,5
+9,20,Male,Obese,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+10,24,Female,Obese,Weight Loss,Snack,Samosa,200,5,20,10
+11,18,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+12,17,Female,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+13,25,Male,Normal,Maintenance,Dinner,Hoppers,400,10,60,10
+14,23,Female,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+15,17,Male,Underweight,Muscle Gain,Dinner,Pittu,450,12,65,12
+16,25,Female,Underweight,Muscle Gain,Lunch,Kottu,700,25,90,25
+17,20,Female,Overweight,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+18,27,Male,Overweight,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+19,21,Female,Normal,Maintenance,Snack,Samosa,200,5,20,10
+20,16,Female,Normal,Maintenance,Lunch,Kottu,700,25,90,25
+21,26,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+22,24,Male,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+23,30,Female,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+24,29,Female,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+25,18,Female,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+26,30,Male,Underweight,Muscle Gain,Breakfast,String Hoppers,250,6,45,2
+27,16,Male,Underweight,Muscle Gain,Snack,Banana,100,1,27,0
+28,29,Female,Underweight,Muscle Gain,Lunch,Rice and Curry,600,20,80,20
+29,17,Male,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+30,28,Male,Overweight,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+31,19,Female,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+32,27,Male,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+33,17,Female,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+34,16,Male,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+35,16,Male,Obese,Weight Loss,Snack,Samosa,200,5,20,10
+36,21,Male,Underweight,Muscle Gain,Lunch,Kottu,700,25,90,25
+37,27,Male,Normal,Maintenance,Snack,Banana,100,1,27,0
+38,29,Female,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+39,29,Female,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+40,15,Female,Normal,Maintenance,Dinner,Hoppers,400,10,60,10
+41,29,Female,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+42,24,Male,Obese,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+43,17,Male,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+44,25,Male,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+45,25,Male,Obese,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+46,22,Male,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+47,28,Female,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+48,19,Female,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+49,29,Male,Obese,Weight Loss,Dinner,Hoppers,400,10,60,10
+50,25,Male,Overweight,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+51,17,Female,Overweight,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+52,27,Male,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+53,17,Female,Underweight,Muscle Gain,Lunch,Kottu,700,25,90,25
+54,24,Female,Obese,Weight Loss,Dinner,Hoppers,400,10,60,10
+55,18,Female,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+56,17,Female,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+57,21,Female,Obese,Weight Loss,Snack,Banana,100,1,27,0
+58,16,Female,Normal,Maintenance,Snack,Samosa,200,5,20,10
+59,18,Female,Overweight,Weight Loss,Dinner,Hoppers,400,10,60,10
+60,30,Female,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+61,28,Male,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+62,23,Male,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+63,20,Male,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+64,18,Male,Obese,Weight Loss,Snack,Banana,100,1,27,0
+65,20,Female,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+66,27,Male,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+67,23,Male,Underweight,Muscle Gain,Breakfast,Milk Rice,300,7,50,5
+68,27,Female,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+69,19,Male,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+70,18,Male,Normal,Maintenance,Lunch,Kottu,700,25,90,25
+71,20,Female,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+72,29,Male,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20
+73,16,Female,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+74,18,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+75,17,Female,Underweight,Muscle Gain,Snack,Banana,100,1,27,0
+76,15,Female,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+77,30,Female,Normal,Maintenance,Lunch,Kottu,700,25,90,25
+78,20,Female,Obese,Weight Loss,Dinner,Hoppers,400,10,60,10
+79,19,Male,Obese,Weight Loss,Dinner,Pittu,450,12,65,12
+80,29,Female,Normal,Maintenance,Snack,Samosa,200,5,20,10
+81,24,Female,Underweight,Muscle Gain,Snack,Banana,100,1,27,0
+82,16,Male,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+83,28,Female,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+84,26,Male,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+85,19,Male,Normal,Maintenance,Snack,Samosa,200,5,20,10
+86,17,Male,Overweight,Weight Loss,Snack,Banana,100,1,27,0
+87,22,Female,Underweight,Muscle Gain,Lunch,Kottu,700,25,90,25
+88,22,Female,Normal,Maintenance,Snack,Banana,100,1,27,0
+89,30,Male,Underweight,Muscle Gain,Snack,Samosa,200,5,20,10
+90,20,Female,Normal,Maintenance,Dinner,Hoppers,400,10,60,10
+91,21,Female,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+92,15,Female,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+93,27,Female,Overweight,Weight Loss,Snack,Banana,100,1,27,0
+94,16,Male,Overweight,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+95,18,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+96,20,Female,Obese,Weight Loss,Snack,Samosa,200,5,20,10
+97,19,Female,Normal,Maintenance,Snack,Banana,100,1,27,0
+98,24,Male,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+99,16,Male,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+100,18,Female,Normal,Maintenance,Dinner,Hoppers,400,10,60,10
+101,30,Female,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+102,29,Female,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+103,20,Female,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+104,28,Female,Underweight,Muscle Gain,Lunch,Kottu,700,25,90,25
+105,16,Female,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+106,17,Male,Normal,Maintenance,Lunch,Kottu,700,25,90,25
+107,25,Male,Overweight,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+108,19,Male,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20
+109,30,Female,Overweight,Weight Loss,Snack,Banana,100,1,27,0
+110,17,Male,Normal,Maintenance,Dinner,Hoppers,400,10,60,10
+111,29,Male,Underweight,Muscle Gain,Lunch,Rice and Curry,600,20,80,20
+112,17,Female,Underweight,Muscle Gain,Breakfast,String Hoppers,250,6,45,2
+113,25,Male,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+114,15,Male,Underweight,Muscle Gain,Snack,Banana,100,1,27,0
+115,24,Female,Normal,Maintenance,Snack,Banana,100,1,27,0
+116,29,Male,Obese,Weight Loss,Dinner,Pittu,450,12,65,12
+117,16,Male,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+118,25,Female,Overweight,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+119,15,Female,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+120,23,Male,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+121,19,Male,Obese,Weight Loss,Dinner,Pittu,450,12,65,12
+122,22,Female,Overweight,Weight Loss,Dinner,Hoppers,400,10,60,10
+123,27,Female,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+124,27,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+125,17,Female,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+126,15,Female,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+127,15,Female,Underweight,Muscle Gain,Dinner,Hoppers,400,10,60,10
+128,19,Female,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+129,20,Male,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+130,23,Male,Underweight,Muscle Gain,Lunch,Kottu,700,25,90,25
+131,23,Male,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+132,21,Male,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+133,25,Female,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+134,18,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+135,25,Male,Overweight,Weight Loss,Dinner,Hoppers,400,10,60,10
+136,22,Female,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+137,29,Female,Overweight,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+138,20,Male,Overweight,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+139,18,Male,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+140,23,Female,Normal,Maintenance,Snack,Samosa,200,5,20,10
+141,27,Female,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20
+142,15,Female,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+143,28,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+144,15,Male,Overweight,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+145,26,Male,Underweight,Muscle Gain,Dinner,Hoppers,400,10,60,10
+146,30,Female,Underweight,Muscle Gain,Breakfast,Milk Rice,300,7,50,5
+147,26,Female,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+148,22,Male,Underweight,Muscle Gain,Snack,Banana,100,1,27,0
+149,27,Female,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+150,20,Male,Underweight,Muscle Gain,Lunch,Rice and Curry,600,20,80,20
+151,23,Male,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+152,19,Female,Obese,Weight Loss,Dinner,Pittu,450,12,65,12
+153,29,Male,Overweight,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+154,19,Female,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+155,15,Male,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20
+156,30,Female,Underweight,Muscle Gain,Snack,Banana,100,1,27,0
+157,17,Female,Obese,Weight Loss,Snack,Banana,100,1,27,0
+158,22,Male,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+159,25,Male,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+160,16,Male,Overweight,Weight Loss,Lunch,Kottu,700,25,90,25
+161,17,Female,Underweight,Muscle Gain,Breakfast,Milk Rice,300,7,50,5
+162,16,Male,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+163,23,Female,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20
+164,26,Male,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+165,23,Male,Overweight,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+166,20,Female,Normal,Maintenance,Dinner,Hoppers,400,10,60,10
+167,15,Male,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+168,30,Male,Normal,Maintenance,Snack,Samosa,200,5,20,10
+169,26,Male,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+170,25,Female,Obese,Weight Loss,Snack,Banana,100,1,27,0
+171,28,Male,Underweight,Muscle Gain,Dinner,Hoppers,400,10,60,10
+172,15,Male,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+173,18,Male,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+174,28,Male,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+175,28,Female,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+176,16,Male,Obese,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+177,21,Female,Underweight,Muscle Gain,Breakfast,String Hoppers,250,6,45,2
+178,23,Female,Overweight,Weight Loss,Dinner,Hoppers,400,10,60,10
+179,23,Female,Overweight,Weight Loss,Snack,Samosa,200,5,20,10
+180,17,Female,Overweight,Weight Loss,Snack,Banana,100,1,27,0
+181,20,Male,Normal,Maintenance,Dinner,Pittu,450,12,65,12
+182,24,Male,Normal,Maintenance,Dinner,Hoppers,400,10,60,10
+183,18,Male,Obese,Weight Loss,Dinner,Hoppers,400,10,60,10
+184,23,Female,Normal,Maintenance,Lunch,Kottu,700,25,90,25
+185,15,Male,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+186,25,Male,Underweight,Muscle Gain,Breakfast,String Hoppers,250,6,45,2
+187,25,Female,Underweight,Muscle Gain,Snack,Samosa,200,5,20,10
+188,17,Male,Normal,Maintenance,Snack,Samosa,200,5,20,10
+189,19,Female,Overweight,Weight Loss,Lunch,Rice and Curry,600,20,80,20
+190,27,Female,Obese,Weight Loss,Breakfast,Milk Rice,300,7,50,5
+191,16,Female,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+192,19,Female,Normal,Maintenance,Breakfast,Milk Rice,300,7,50,5
+193,20,Male,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20
+194,20,Male,Normal,Maintenance,Breakfast,String Hoppers,250,6,45,2
+195,20,Male,Obese,Weight Loss,Lunch,Kottu,700,25,90,25
+196,15,Female,Overweight,Weight Loss,Dinner,Pittu,450,12,65,12
+197,17,Female,Obese,Weight Loss,Breakfast,String Hoppers,250,6,45,2
+198,22,Male,Normal,Maintenance,Snack,Banana,100,1,27,0
+199,18,Male,Obese,Weight Loss,Snack,Samosa,200,5,20,10
+200,22,Male,Normal,Maintenance,Lunch,Rice and Curry,600,20,80,20

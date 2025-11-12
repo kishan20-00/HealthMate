@@ -1,0 +1,201 @@
+user_id,age,gender,sleep_hours,recommended_sleep,water_intake_liters,stress_level,screen_time_hours,recommendation
+1,27,Female,7.6,8.0,2.7,High,7.1,Increase sleep duration
+2,15,Female,6.6,8.0,3.4,Moderate,7.1,Increase sleep duration
+3,23,Male,5.3,8.0,2.4,Moderate,4.7,Increase sleep duration; Drink more water
+4,27,Male,5.7,8.0,1.4,Moderate,2.2,Increase sleep duration; Drink more water
+5,28,Female,5.7,8.0,3.4,High,6.2,Increase sleep duration
+6,17,Male,8.6,8.0,1.9,Moderate,2.9,Drink more water
+7,22,Female,8.5,8.0,3.4,High,6.0,Maintain current lifestyle
+8,27,Male,9.1,8.0,2.9,Low,4.5,Maintain current lifestyle
+9,20,Female,6.2,8.0,3.3,Low,3.0,Increase sleep duration
+10,25,Female,8.2,8.0,1.6,Low,9.3,Drink more water
+11,16,Female,9.6,8.0,2.3,High,3.9,Drink more water
+12,21,Female,9.6,8.0,1.5,Moderate,7.7,Drink more water
+13,20,Female,6.9,8.0,2.0,High,7.9,Increase sleep duration; Drink more water
+14,20,Female,8.9,8.0,1.6,Moderate,2.5,Drink more water
+15,22,Male,4.2,8.0,1.2,High,4.6,Increase sleep duration; Drink more water
+16,28,Male,5.7,8.0,2.6,Low,2.4,Increase sleep duration
+17,18,Female,6.9,8.0,2.1,Low,6.4,Increase sleep duration; Drink more water
+18,19,Male,7.4,8.0,3.1,High,2.4,Increase sleep duration
+19,28,Female,8.5,8.0,1.7,Moderate,2.5,Drink more water
+20,21,Male,7.7,8.0,1.1,High,9.7,Increase sleep duration; Drink more water
+21,30,Female,8.8,8.0,2.4,Low,3.6,Drink more water
+22,20,Male,8.5,8.0,1.4,Moderate,3.6,Drink more water
+23,21,Female,4.1,8.0,3.0,Low,7.4,Increase sleep duration
+24,26,Female,8.5,8.0,2.2,Moderate,2.6,Drink more water
+25,24,Male,4.7,8.0,1.7,Low,7.7,Increase sleep duration; Drink more water
+26,16,Female,7.2,8.0,2.6,Low,5.0,Increase sleep duration
+27,29,Male,5.3,8.0,1.5,High,2.0,Increase sleep duration; Drink more water
+28,15,Male,4.5,8.0,3.1,Moderate,5.7,Increase sleep duration
+29,21,Male,4.3,8.0,2.3,Moderate,6.6,Increase sleep duration; Drink more water
+30,18,Male,5.5,8.0,1.7,Moderate,9.8,Increase sleep duration; Drink more water
+31,17,Male,5.3,8.0,1.4,High,4.6,Increase sleep duration; Drink more water
+32,16,Female,6.8,8.0,2.9,High,7.3,Increase sleep duration
+33,15,Male,7.7,8.0,2.2,High,7.0,Increase sleep duration; Drink more water
+34,20,Male,8.8,8.0,1.1,Low,8.2,Drink more water
+35,15,Female,8.4,8.0,1.1,Low,7.7,Drink more water
+36,18,Female,9.1,8.0,2.3,Moderate,5.7,Drink more water
+37,27,Female,9.0,8.0,2.9,Low,4.2,Maintain current lifestyle
+38,29,Male,9.1,8.0,2.9,High,2.9,Maintain current lifestyle
+39,25,Male,9.8,8.0,1.4,High,5.5,Drink more water
+40,18,Male,6.0,8.0,1.1,Low,5.5,Increase sleep duration; Drink more water
+41,19,Male,5.9,8.0,1.5,High,7.2,Increase sleep duration; Drink more water
+42,26,Male,9.4,8.0,1.3,Moderate,5.8,Drink more water
+43,29,Female,8.1,8.0,3.2,Low,3.2,Maintain current lifestyle
+44,29,Male,9.9,8.0,3.1,High,6.0,Maintain current lifestyle
+45,18,Male,8.6,8.0,1.5,High,3.1,Drink more water
+46,29,Male,8.0,8.0,2.4,Moderate,9.7,Drink more water
+47,19,Male,5.0,8.0,2.6,High,7.3,Increase sleep duration
+48,24,Female,5.3,8.0,2.7,Moderate,9.2,Increase sleep duration
+49,28,Male,5.1,8.0,1.0,Low,7.7,Increase sleep duration; Drink more water
+50,25,Male,6.6,8.0,1.8,Low,9.4,Increase sleep duration; Drink more water
+51,15,Male,8.7,8.0,1.4,Low,7.1,Drink more water
+52,21,Female,9.0,8.0,3.2,Low,3.3,Maintain current lifestyle
+53,23,Male,4.1,8.0,1.3,High,6.0,Increase sleep duration; Drink more water
+54,15,Female,9.7,8.0,2.5,High,6.3,Maintain current lifestyle
+55,24,Male,7.6,8.0,2.0,Low,2.7,Increase sleep duration; Drink more water
+56,27,Female,5.3,8.0,1.6,Low,3.4,Increase sleep duration; Drink more water
+57,30,Female,6.3,8.0,3.2,Low,2.0,Increase sleep duration
+58,28,Male,5.9,8.0,3.2,Moderate,5.9,Increase sleep duration
+59,21,Male,8.5,8.0,1.1,High,6.3,Drink more water
+60,22,Female,7.1,8.0,1.9,High,2.1,Increase sleep duration; Drink more water
+61,22,Female,9.7,8.0,2.8,High,3.7,Maintain current lifestyle
+62,21,Male,8.0,8.0,1.4,Low,6.6,Drink more water
+63,22,Female,5.1,8.0,2.4,High,8.3,Increase sleep duration; Drink more water
+64,23,Female,6.7,8.0,1.9,Low,7.9,Increase sleep duration; Drink more water
+65,19,Male,4.1,8.0,2.9,High,9.6,Increase sleep duration
+66,27,Female,9.9,8.0,3.5,Low,9.9,Maintain current lifestyle
+67,17,Male,5.9,8.0,2.0,High,7.7,Increase sleep duration; Drink more water
+68,25,Female,4.7,8.0,1.1,Moderate,9.7,Increase sleep duration; Drink more water
+69,28,Female,6.6,8.0,1.1,Low,9.8,Increase sleep duration; Drink more water
+70,18,Male,4.6,8.0,1.2,Low,7.3,Increase sleep duration; Drink more water
+71,18,Male,6.0,8.0,1.2,High,7.3,Increase sleep duration; Drink more water
+72,15,Female,6.3,8.0,3.3,High,6.6,Increase sleep duration
+73,17,Male,4.2,8.0,3.3,Low,9.6,Increase sleep duration
+74,29,Male,4.1,8.0,1.7,Low,7.1,Increase sleep duration; Drink more water
+75,15,Female,5.0,8.0,2.3,High,9.9,Increase sleep duration; Drink more water
+76,30,Male,5.9,8.0,1.4,Moderate,3.7,Increase sleep duration; Drink more water
+77,22,Male,7.9,8.0,2.7,Low,8.2,Increase sleep duration
+78,23,Female,9.3,8.0,1.5,Moderate,8.3,Drink more water
+79,30,Female,9.4,8.0,2.6,Moderate,7.8,Maintain current lifestyle
+80,22,Female,8.7,8.0,3.1,Low,8.6,Maintain current lifestyle
+81,21,Male,8.3,8.0,2.7,Moderate,6.3,Maintain current lifestyle
+82,23,Female,4.2,8.0,1.8,Moderate,2.1,Increase sleep duration; Drink more water
+83,25,Female,7.6,8.0,3.2,Low,3.7,Increase sleep duration
+84,16,Male,4.9,8.0,2.3,Low,3.3,Increase sleep duration; Drink more water
+85,26,Female,9.9,8.0,2.6,High,8.1,Maintain current lifestyle
+86,19,Female,9.9,8.0,2.7,Low,7.7,Maintain current lifestyle
+87,22,Female,6.4,8.0,1.8,High,8.9,Increase sleep duration; Drink more water
+88,25,Female,7.0,8.0,2.2,High,5.3,Increase sleep duration; Drink more water
+89,18,Female,6.5,8.0,1.9,Moderate,3.1,Increase sleep duration; Drink more water
+90,24,Male,7.8,8.0,2.1,Moderate,8.6,Increase sleep duration; Drink more water
+91,22,Female,8.3,8.0,2.2,Moderate,7.6,Drink more water
+92,28,Male,6.9,8.0,1.8,Low,5.2,Increase sleep duration; Drink more water
+93,30,Female,6.7,8.0,2.2,Moderate,2.1,Increase sleep duration; Drink more water
+94,27,Female,8.6,8.0,2.2,High,9.5,Drink more water
+95,23,Male,4.4,8.0,2.5,Moderate,2.6,Increase sleep duration
+96,19,Male,8.3,8.0,2.3,Moderate,7.0,Drink more water
+97,30,Female,9.2,8.0,1.8,Moderate,4.0,Drink more water
+98,25,Female,6.4,8.0,1.5,High,3.9,Increase sleep duration; Drink more water
+99,23,Male,9.2,8.0,2.7,Moderate,4.7,Maintain current lifestyle
+100,20,Male,7.3,8.0,2.2,Low,3.3,Increase sleep duration; Drink more water
+101,17,Male,6.7,8.0,1.0,Low,2.1,Increase sleep duration; Drink more water
+102,29,Female,4.9,8.0,2.4,High,5.1,Increase sleep duration; Drink more water
+103,24,Female,4.8,8.0,2.8,High,2.7,Increase sleep duration
+104,15,Female,6.3,8.0,2.3,High,6.7,Increase sleep duration; Drink more water
+105,25,Male,8.5,8.0,2.0,Moderate,7.3,Drink more water
+106,25,Female,6.5,8.0,3.0,Low,6.1,Increase sleep duration
+107,30,Female,6.1,8.0,1.9,Moderate,8.5,Increase sleep duration; Drink more water
+108,28,Male,9.6,8.0,2.5,Moderate,4.6,Maintain current lifestyle
+109,24,Male,4.8,8.0,3.3,High,6.8,Increase sleep duration
+110,29,Male,8.0,8.0,2.3,High,6.0,Drink more water
+111,23,Female,8.2,8.0,1.6,High,9.6,Drink more water
+112,26,Male,8.4,8.0,1.7,High,5.1,Drink more water
+113,16,Male,7.6,8.0,3.4,Moderate,8.1,Increase sleep duration
+114,24,Male,8.1,8.0,2.3,Moderate,6.9,Drink more water
+115,20,Female,9.7,8.0,1.1,Low,4.7,Drink more water
+116,25,Female,7.2,8.0,1.5,Moderate,4.1,Increase sleep duration; Drink more water
+117,28,Female,6.0,8.0,2.3,High,9.9,Increase sleep duration; Drink more water
+118,28,Female,7.5,8.0,1.1,Moderate,5.6,Increase sleep duration; Drink more water
+119,27,Male,5.0,8.0,3.0,Moderate,2.8,Increase sleep duration
+120,30,Male,9.0,8.0,1.9,Low,9.2,Drink more water
+121,23,Male,7.0,8.0,1.7,High,6.9,Increase sleep duration; Drink more water
+122,21,Female,6.8,8.0,1.9,High,2.7,Increase sleep duration; Drink more water
+123,20,Male,8.4,8.0,3.5,Moderate,9.1,Maintain current lifestyle
+124,27,Male,9.4,8.0,2.2,High,4.1,Drink more water
+125,19,Female,7.3,8.0,1.8,Low,4.6,Increase sleep duration; Drink more water
+126,16,Female,6.2,8.0,3.4,Moderate,9.0,Increase sleep duration
+127,29,Female,7.4,8.0,1.1,Moderate,8.2,Increase sleep duration; Drink more water
+128,24,Female,6.8,8.0,1.1,Low,6.4,Increase sleep duration; Drink more water
+129,29,Female,5.4,8.0,1.5,High,8.0,Increase sleep duration; Drink more water
+130,25,Male,6.8,8.0,3.0,Low,5.5,Increase sleep duration
+131,26,Male,5.0,8.0,2.2,Low,4.0,Increase sleep duration; Drink more water
+132,16,Male,4.6,8.0,1.2,Low,5.0,Increase sleep duration; Drink more water
+133,24,Male,8.3,8.0,1.1,Low,7.2,Drink more water
+134,15,Female,7.6,8.0,3.4,Moderate,3.4,Increase sleep duration
+135,15,Female,8.4,8.0,2.1,Low,3.6,Drink more water
+136,21,Male,10.0,8.0,2.8,Moderate,2.3,Maintain current lifestyle
+137,29,Male,4.7,8.0,2.2,Low,8.3,Increase sleep duration; Drink more water
+138,15,Male,7.0,8.0,2.9,Moderate,8.6,Increase sleep duration
+139,21,Female,4.5,8.0,2.8,High,4.6,Increase sleep duration
+140,21,Female,5.0,8.0,3.4,High,6.3,Increase sleep duration
+141,30,Male,9.7,8.0,3.1,Moderate,3.3,Maintain current lifestyle
+142,15,Male,7.3,8.0,1.7,Moderate,6.0,Increase sleep duration; Drink more water
+143,24,Male,7.8,8.0,1.7,Moderate,7.1,Increase sleep duration; Drink more water
+144,24,Female,7.8,8.0,1.2,Moderate,6.2,Increase sleep duration; Drink more water
+145,17,Female,6.1,8.0,3.2,Moderate,6.2,Increase sleep duration
+146,22,Female,6.4,8.0,1.9,Moderate,7.2,Increase sleep duration; Drink more water
+147,24,Male,10.0,8.0,1.4,Low,4.5,Drink more water
+148,29,Male,8.2,8.0,2.2,Low,9.3,Drink more water
+149,26,Female,6.5,8.0,2.2,Low,7.2,Increase sleep duration; Drink more water
+150,18,Male,9.6,8.0,3.4,Moderate,2.8,Maintain current lifestyle
+151,28,Male,5.7,8.0,1.1,Moderate,2.3,Increase sleep duration; Drink more water
+152,29,Female,7.2,8.0,1.6,Moderate,6.7,Increase sleep duration; Drink more water
+153,27,Female,8.4,8.0,2.7,Moderate,9.7,Maintain current lifestyle
+154,15,Female,8.0,8.0,2.4,Moderate,3.8,Drink more water
+155,28,Male,8.0,8.0,1.6,Low,9.9,Drink more water
+156,21,Female,4.8,8.0,2.6,Moderate,9.7,Increase sleep duration
+157,29,Male,9.2,8.0,1.5,Moderate,8.8,Drink more water
+158,23,Male,6.0,8.0,2.8,Moderate,4.9,Increase sleep duration
+159,16,Male,6.3,8.0,3.1,High,5.5,Increase sleep duration
+160,25,Female,7.2,8.0,2.7,High,4.8,Increase sleep duration
+161,17,Female,6.2,8.0,2.0,High,3.8,Increase sleep duration; Drink more water
+162,21,Male,7.9,8.0,1.9,Low,4.7,Increase sleep duration; Drink more water
+163,16,Male,8.9,8.0,1.3,Low,2.9,Drink more water
+164,15,Male,6.8,8.0,2.4,Moderate,9.4,Increase sleep duration; Drink more water
+165,27,Female,8.5,8.0,2.3,High,7.3,Drink more water
+166,17,Male,6.3,8.0,2.9,Low,2.9,Increase sleep duration
+167,26,Female,7.7,8.0,2.5,High,4.1,Increase sleep duration
+168,19,Female,4.3,8.0,2.6,Moderate,9.6,Increase sleep duration
+169,24,Male,4.9,8.0,2.7,High,6.4,Increase sleep duration
+170,28,Male,4.4,8.0,3.2,High,3.7,Increase sleep duration
+171,30,Female,6.6,8.0,3.1,Moderate,8.4,Increase sleep duration
+172,16,Female,8.8,8.0,2.5,Low,7.9,Maintain current lifestyle
+173,22,Male,9.1,8.0,2.6,Moderate,2.8,Maintain current lifestyle
+174,23,Female,6.6,8.0,2.3,Moderate,6.2,Increase sleep duration; Drink more water
+175,19,Male,8.8,8.0,2.3,Moderate,7.1,Drink more water
+176,21,Male,6.6,8.0,1.4,High,8.0,Increase sleep duration; Drink more water
+177,24,Male,9.9,8.0,2.6,High,6.1,Maintain current lifestyle
+178,24,Male,6.2,8.0,1.0,Moderate,9.3,Increase sleep duration; Drink more water
+179,28,Female,7.6,8.0,2.3,Moderate,7.3,Increase sleep duration; Drink more water
+180,30,Male,4.2,8.0,2.4,Low,3.8,Increase sleep duration; Drink more water
+181,30,Female,5.2,8.0,2.8,Low,6.0,Increase sleep duration
+182,26,Male,5.7,8.0,1.8,Low,4.8,Increase sleep duration; Drink more water
+183,22,Male,4.2,8.0,1.9,Moderate,3.0,Increase sleep duration; Drink more water
+184,19,Female,8.9,8.0,1.9,Moderate,4.7,Drink more water
+185,28,Female,7.9,8.0,2.3,High,2.8,Increase sleep duration; Drink more water
+186,25,Female,7.3,8.0,1.3,Low,4.1,Increase sleep duration; Drink more water
+187,20,Male,6.9,8.0,1.3,High,5.4,Increase sleep duration; Drink more water
+188,28,Female,9.4,8.0,3.4,Moderate,4.8,Maintain current lifestyle
+189,18,Male,8.1,8.0,2.6,High,2.3,Maintain current lifestyle
+190,24,Female,4.3,8.0,1.7,Low,2.9,Increase sleep duration; Drink more water
+191,18,Female,7.7,8.0,2.2,High,5.0,Increase sleep duration; Drink more water
+192,16,Female,6.8,8.0,2.0,Moderate,4.8,Increase sleep duration; Drink more water
+193,25,Female,8.2,8.0,1.1,Low,3.3,Drink more water
+194,17,Male,9.4,8.0,2.4,Low,3.2,Drink more water
+195,17,Male,10.0,8.0,1.0,High,5.1,Drink more water
+196,19,Female,4.0,8.0,2.3,Low,6.9,Increase sleep duration; Drink more water
+197,21,Female,7.5,8.0,2.4,High,2.4,Increase sleep duration; Drink more water
+198,23,Female,6.4,8.0,1.5,High,2.1,Increase sleep duration; Drink more water
+199,22,Male,6.4,8.0,2.1,Low,9.3,Increase sleep duration; Drink more water
+200,27,Male,9.2,8.0,1.9,High,6.3,Drink more water
