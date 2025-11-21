@@ -19,9 +19,9 @@ import { apiService } from "../services/api";
 // Define required fields for each prediction type for validation
 const REQUIRED_FIELDS = {
     base: ['age', 'gender', 'activity_level', 'bmi_status', 'bmi'],
-    workout: ['duration_minutes', 'calories_burned'],
+    workout: ['calories_burned', 'health_condition'],
     lifestyle: ['sleep_hours', 'water_intake_liters', 'stress_level', 'screen_time_hours'],
-    meal: ['goal', 'meal_type'],
+    meal: ['goal', 'meal_type', 'bmi_status'],
 };
 
 const PredictionScreen = () => {
@@ -30,7 +30,11 @@ const PredictionScreen = () => {
   const styles = createStyles(theme); 
 
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  
+  // Split loading states to prevent useEffect loops
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [predictionLoading, setPredictionLoading] = useState(false);
+  
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("workout");
   const [predictions, setPredictions] = useState({
@@ -39,10 +43,8 @@ const PredictionScreen = () => {
     meal: null,
   });
 
-  // State to hold the necessary input data for API calls, pre-filled from DB
   const [apiInputData, setApiInputData] = useState(null);
   
-  // --- Data Fetching and Auto-Trigger Logic ---
   useEffect(() => {
     if (user) {
       fetchUserData();
@@ -50,17 +52,16 @@ const PredictionScreen = () => {
   }, [user]);
 
   useEffect(() => {
-      // Automatically run predictions after user data and last inputs are ready
-      if (apiInputData && !loading) {
-          handleAutoPrediction();
-      } else if (!apiInputData && !loading) {
-          // Set loading to false if no input data, preventing infinite loading state
-          setLoading(false); 
+      // Only run if profile is done loading and we have data
+      if (!profileLoading && apiInputData) {
+          if (!predictions[activeTab]) {
+              handleAutoPrediction();
+          }
       }
-  }, [apiInputData]);
+  }, [profileLoading, apiInputData]); 
 
   const calculateBMI = (weight, height) => {
-    if (!weight || !height) return 22.5; // Default BMI
+    if (!weight || !height) return 22.5;
     const heightInMeters = height / 100;
     return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
@@ -74,7 +75,7 @@ const PredictionScreen = () => {
   };
 
   const fetchUserData = async () => {
-    setLoading(true);
+    setProfileLoading(true);
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
@@ -87,76 +88,63 @@ const PredictionScreen = () => {
         const bmiStatus = getBMICategory(currentBMI);
         
         const aiRecs = data.aiRecommendations || {};
-        const runRecords = data.runHistory || []; // Ensure array fallback
+        const runRecords = data.runHistory || []; 
         const hydrationData = data.hydrationData || {};
-        const screenTimeHistory = data.screenTimeHistory || []; // Ensure array fallback
-        const foodHistory = data.foodHistory || []; // Ensure array fallback
+        const screenTimeHistory = data.screenTimeHistory || []; 
+        const foodHistory = data.foodHistory || []; 
 
         const dateKeys = Object.keys(hydrationData);
         dateKeys.sort(); 
         const latestDateKey = dateKeys[dateKeys.length - 1]; 
         const latestRecord = hydrationData[latestDateKey] || {};
 
-        // Set initial predictions state with the latest results (for quick display)
         setPredictions({
           workout: aiRecs.workout || null,
           lifestyle: aiRecs.lifestyle || null,
           meal: aiRecs.meal || null,
         });
 
-        // Extract last successful input data or use profile/default values
         const wIn = runRecords[runRecords.length - 1] || {};
-        // Lifestyle input from profile or previous successful prediction
-        // Using profile data directly for sleep, activity, health conditions
-        // Using latest tracking data for water/screen time
         const sIn = screenTimeHistory[screenTimeHistory.length - 1] || {};
         const fIn = foodHistory[foodHistory.length - 1] || {};
 
-        // Prepare the standardized input data object for API calls
-        // Use ?? to default to null if the value is missing or 0, making validation easier
-        // Note: parseInt/parseFloat on null/undefined/non-numeric gives NaN, so we handle that
         const waterIntake = parseFloat(latestRecord.cups) ? (latestRecord.cups * 200 / 1000).toFixed(1) : null;
         const screenTime = parseFloat(sIn.screen_time_hours);
-        const workoutDuration = parseInt(wIn.duration_minutes);
         const caloriesBurned = parseInt(wIn.calories_burned);
 
         setApiInputData({
-            // Base User Data - CRITICAL FOR ALL
             age: data.age ?? null,
             gender: data.gender ?? null,
-            activity_level: data.activityLevel || "Medium", // Has default
-            health_condition: data.healthConditions || "None", // Has default
+            activity_level: data.activityLevel || "Medium",
+            health_condition: data.healthConditions || "None",
             bmi_status: bmiStatus,
             bmi: parseFloat(currentBMI),
 
-            // Workout Defaults (Last successful run or default values)
             workout: {
-                // Must be a number for API, null if not available
-                duration_minutes: isNaN(workoutDuration) ? null : workoutDuration,
                 calories_burned: isNaN(caloriesBurned) ? null : caloriesBurned,
             },
 
-            // Lifestyle Defaults
             lifestyle: {
                 sleep_hours: parseFloat(data.sleepHours) ?? null,
-                recommended_sleep: 8.0, // Fixed
+                recommended_sleep: 8.0,
                 water_intake_liters: parseFloat(waterIntake) ?? null,
-                stress_level: data.stressLevel || "Moderate", // Check DB, use moderate if missing
+                stress_level: data.stressLevel || "Moderate",
                 screen_time_hours: isNaN(screenTime) ? null : screenTime,
             },
 
-            // Meal Defaults 
             meal: {
                 goal: fIn.goal ?? null,
                 meal_type: fIn.meal_type ?? null,
             }
         });
+      } else {
+          Alert.alert("Profile Error", "User profile not found. Please complete your profile setup.");
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
       Alert.alert("Error", "Failed to load user data for prediction.");
     } finally {
-        // The auto-prediction useEffect will set loading to false after data is ready/not ready
+        setProfileLoading(false);
     }
   };
 
@@ -167,7 +155,6 @@ const PredictionScreen = () => {
     setRefreshing(false);
   };
   
-  // Helper to structure input data for API (using pre-filled apiInputData)
   const getPredictionInputData = (type) => {
       if (!apiInputData) {
           return { missingData: true, reason: 'Profile data is missing.' };
@@ -178,23 +165,18 @@ const PredictionScreen = () => {
       const requiredType = REQUIRED_FIELDS[type];
       const missingFields = [];
 
-      // Combine base and type-specific required fields
       const allRequired = [...requiredBase];
       if (type === 'workout') {
-          // Workout needs base + workout fields
           allRequired.push(...REQUIRED_FIELDS.workout);
           Object.assign(input, apiInputData.workout);
       } else if (type === 'lifestyle') {
-          // Lifestyle needs base + lifestyle fields
-          allRequired.push(...REQUIRED_FIELDS.lifestyle.filter(f => f !== 'stress_level')); // Stress has a default
+          allRequired.push(...REQUIRED_FIELDS.lifestyle.filter(f => f !== 'stress_level'));
           Object.assign(input, apiInputData.lifestyle);
       } else if (type === 'meal') {
-          // Meal needs base + meal fields
           allRequired.push(...REQUIRED_FIELDS.meal);
           Object.assign(input, apiInputData.meal);
       }
 
-      // Add base data to the input object
       Object.assign(input, {
           age: apiInputData.age,
           gender: apiInputData.gender,
@@ -204,9 +186,7 @@ const PredictionScreen = () => {
           bmi: apiInputData.bmi,
       });
 
-      // 1. Validation Check: Ensure all required fields have valid values
       for (const field of allRequired) {
-          // Check if value is null, undefined, or NaN (from parseInt/parseFloat on missing data)
           const value = input[field];
           if (value === null || value === undefined || (typeof value === 'number' && isNaN(value)) || value === '') {
               missingFields.push(field);
@@ -221,11 +201,9 @@ const PredictionScreen = () => {
           };
       }
 
-      // 2. Return validated, structured input data
       return input;
   }
 
-  // Store recommendation helper (unchanged)
   const storeRecommendation = async (type, result, inputData) => {
     try {
       const userDocRef = doc(db, "users", user.uid);
@@ -240,14 +218,13 @@ const PredictionScreen = () => {
 
       const record = {
           ...result,
-          timestamp: new Date(), // Use client-side date for array element
+          timestamp: new Date(), 
           inputData: inputData,
       };
 
       aiRecommendations[type] = record;
       recommendationHistory[type].unshift(record);
 
-      // Keep only latest 5 entries
       if (recommendationHistory[type].length > 5) {
         recommendationHistory[type] = recommendationHistory[type].slice(0, 5);
       }
@@ -267,7 +244,6 @@ const PredictionScreen = () => {
     const inputData = getPredictionInputData(type);
     
     if (inputData.missingData) {
-        // Set prediction state to an object indicating missing data to be rendered
         setPredictions((prev) => ({
             ...prev,
             [type]: { status: "missing_input", error: inputData.reason },
@@ -275,13 +251,10 @@ const PredictionScreen = () => {
         return; 
     }
 
-    // Check if the current prediction is an error/missing state, and skip loading if it's already there
     const isErrorState = predictions[type]?.status === "missing_input" || predictions[type] === null;
-
-    // Skip showing loading indicator for auto-run if a successful prediction already exists
     const shouldShowLoading = !predictions[type] || isErrorState;
 
-    if (shouldShowLoading) setLoading(true);
+    if (shouldShowLoading) setPredictionLoading(true);
 
     try {
       let result;
@@ -308,7 +281,6 @@ const PredictionScreen = () => {
 
         await storeRecommendation(type, result, inputData);
       } else {
-        // API returned an error/failure
         setPredictions((prev) => ({
             ...prev,
             [type]: { status: "api_error", error: result.error || `Failed to get ${type} recommendation.` },
@@ -317,33 +289,23 @@ const PredictionScreen = () => {
       }
     } catch (error) {
       console.error("Prediction error:", error);
-      // Catch network/service call error
       setPredictions((prev) => ({
           ...prev,
           [type]: { status: "service_error", error: "Failed to communicate with prediction service." },
       }));
-      Alert.alert(
-        "Error",
-        "Failed to communicate with prediction service."
-      );
+      Alert.alert("Error", "Failed to communicate with prediction service.");
     } finally {
-        if (shouldShowLoading) setLoading(false);
+        if (shouldShowLoading) setPredictionLoading(false);
     }
   };
 
-  // --- New function to handle running all predictions automatically ---
   const handleAutoPrediction = () => {
-      // Run prediction for the active tab first, then run the rest silently
       handlePrediction(activeTab);
-      setLoading(false);
   }
-
-  // --- Simplified Render Functions ---
 
   const renderPredictionResult = (type, predictionData) => {
       
-      // 1. Loading state (only show if we don't have existing data)
-      if (loading && (!predictionData || predictionData.status === "missing_input" || predictionData.status === "api_error" || predictionData.status === "service_error")) {
+      if (predictionLoading && (!predictionData || predictionData.status === "missing_input" || predictionData.status === "api_error" || predictionData.status === "service_error")) {
           return (
               <View style={styles.loadingResultContainer}>
                   <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -352,9 +314,7 @@ const PredictionScreen = () => {
           );
       }
       
-      // 2. Missing Input Data / Error State
       if (!predictionData || predictionData.status === "missing_input" || predictionData.status === "api_error" || predictionData.status === "service_error") {
-          
           const isMissing = predictionData?.status === "missing_input";
           const message = isMissing 
               ? predictionData.error || "Insufficient data in your profile for this prediction."
@@ -370,7 +330,7 @@ const PredictionScreen = () => {
                   <TouchableOpacity 
                       style={styles.retryButton} 
                       onPress={() => handlePrediction(type)}
-                      disabled={loading || isMissing} // Disable retry if data is missing
+                      disabled={predictionLoading || isMissing} 
                   >
                       <Text style={styles.retryButtonText}>
                           {isMissing ? 'Cannot Run Prediction' : 'Retry Prediction Now'}
@@ -380,10 +340,10 @@ const PredictionScreen = () => {
           );
       }
 
-      // 3. Successful Result
       const mainResult = predictionData.recommended_workout || predictionData.recommendation || predictionData.recommended_meal;
       const confidence = predictionData.confidence;
       const calories = predictionData.estimated_calories;
+      const duration = predictionData.estimated_duration_minutes;
 
       return (
           <View style={styles.resultContainer}>
@@ -391,6 +351,10 @@ const PredictionScreen = () => {
                   {type === 'workout' ? 'Recommended Workout' : type === 'lifestyle' ? 'Lifestyle Recommendation' : 'Meal Recommendation'}
               </Text>
               <Text style={styles.resultMain}>{mainResult}</Text>
+
+              {duration && (
+                  <Text style={styles.confidence}>Estimated Duration: {duration} min</Text>
+              )}
 
               {calories && (
                   <Text style={styles.confidence}>Estimated Calories: {calories}</Text>
@@ -405,8 +369,15 @@ const PredictionScreen = () => {
                       {predictionData.top_recommendations.map((rec, index) => (
                           <Text key={index} style={styles.subResult}>
                               <Text style={styles.subResultNumber}>{index + 1}.</Text>
-                              <Text> {rec.workout || rec.meal}</Text>
+                              
+                              {/* --- FIXED: Added 'rec.recommendation' to the list of text options --- */}
+                              <Text> {rec.workout || rec.recommendation || rec.meal}</Text>
+                              
                               <Text style={styles.subResultConfidence}> ({((rec.confidence || 0) * 100).toFixed(1)}%)</Text>
+                              
+                              {type === 'workout' && duration && (
+                                  <Text style={styles.subResultConfidence}> • ~{duration} min</Text>
+                              )}
                           </Text>
                       ))}
                   </>
@@ -414,9 +385,6 @@ const PredictionScreen = () => {
           </View>
       );
   };
-  
-  // The render functions (renderWorkoutTab, renderLifestyleTab, renderMealTab) 
-  // are essentially unchanged, as the rendering logic is all in renderPredictionResult.
 
   const renderWorkoutTab = () => (
     <View style={styles.tabContent}>
@@ -424,7 +392,7 @@ const PredictionScreen = () => {
             <Text>💪 Workout Prediction</Text>
         </Text>
         <Text style={styles.description}>
-            <Text>Automatically generated routine based on your latest profile data (Duration: {apiInputData?.workout?.duration_minutes ?? 'N/A'} min, Calories: {apiInputData?.workout?.calories_burned ?? 'N/A'}).</Text>
+            <Text>Automatically generated routine based on your goal. (Target Calories: {apiInputData?.workout?.calories_burned ?? 'N/A'}).</Text>
         </Text>
         {renderPredictionResult("workout", predictions.workout)}
     </View>
@@ -454,6 +422,15 @@ const PredictionScreen = () => {
     </View>
   );
 
+  if (profileLoading && !userData) {
+      return (
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+             <ActivityIndicator size="large" color={theme.colors.primary} />
+             <Text style={{ marginTop: 10, color: theme.colors.textLight }}>Loading Profile Data...</Text>
+        </View>
+      );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -461,7 +438,7 @@ const PredictionScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[theme.colors.primary]} // Use theme color
+            colors={[theme.colors.primary]} 
             tintColor={theme.colors.primary}
           />
         }
@@ -473,11 +450,10 @@ const PredictionScreen = () => {
           </Text>
         </View>
 
-        {/* Tab Navigation */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === "workout" && styles.activeTab]}
-            onPress={() => { setActiveTab("workout"); handlePrediction("workout"); }} // Trigger prediction on tab switch
+            onPress={() => { setActiveTab("workout"); handlePrediction("workout"); }} 
           >
             <Text style={[styles.tabText, activeTab === "workout" && styles.activeTabText]}>
               <Text>💪 Workout</Text>
@@ -501,12 +477,10 @@ const PredictionScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Tab Content */}
         {activeTab === "workout" && renderWorkoutTab()}
         {activeTab === "lifestyle" && renderLifestyleTab()}
         {activeTab === "meal" && renderMealTab()}
 
-        {/* User Info Summary */}
         {userData && (
           <View style={styles.userSummary}>
             <Text style={styles.summaryTitle}><Text>Your Profile Summary (used for AI)</Text></Text>
@@ -523,7 +497,6 @@ const PredictionScreen = () => {
   );
 };
 
-// --- Styles using theme ---
 const createStyles = (theme) => StyleSheet.create({
     container: {
         flex: 1,
@@ -586,7 +559,6 @@ const createStyles = (theme) => StyleSheet.create({
         marginBottom: theme.spacing.lg || 20,
         lineHeight: 20,
     },
-    // --- Result Styles ---
     resultContainer: {
         backgroundColor: theme.colors.card || "white",
         padding: theme.spacing.lg || 15,
@@ -623,7 +595,6 @@ const createStyles = (theme) => StyleSheet.create({
         fontSize: theme.typography.sizes.xs || 13,
         color: theme.colors.textLight || "#666",
         marginBottom: 3,
-        // Since this uses nested Text components, ensure wrapping for safety
     },
     subResultNumber: {
         fontWeight: theme.typography.weights.bold,
@@ -657,7 +628,7 @@ const createStyles = (theme) => StyleSheet.create({
         borderLeftColor: theme.colors.error,
     },
     missingInputContainer: {
-        borderLeftColor: theme.colors.accent || 'orange', // New color for missing data
+        borderLeftColor: theme.colors.accent || 'orange', 
     },
     noResultEmoji: {
         fontSize: 32,
@@ -667,7 +638,7 @@ const createStyles = (theme) => StyleSheet.create({
         fontSize: theme.typography.sizes.md,
         color: theme.colors.textLight,
         marginBottom: theme.spacing.md,
-        textAlign: 'center', // Center the error message
+        textAlign: 'center', 
     },
     retryButton: {
         backgroundColor: theme.colors.primary,

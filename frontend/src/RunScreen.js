@@ -22,6 +22,7 @@ const RunTrackerScreen = () => {
   const [duration, setDuration] = useState(""); // Duration in minutes
   const [calories, setCalories] = useState(""); // Calories burned
   const [loading, setLoading] = useState(false);
+  const [WorkoutName, setWorkoutName] = useState("");
 
   // --- Input Change Handlers ---
   const handleDurationChange = (text) => {
@@ -44,6 +45,7 @@ const RunTrackerScreen = () => {
     
     const durationMinutes = parseFloat(duration);
     const caloriesBurned = parseInt(calories);
+    const workoutName = workoutName || "Unnamed Workout";
 
     if (isNaN(durationMinutes) || durationMinutes <= 0 || isNaN(caloriesBurned) || caloriesBurned <= 0) {
       Alert.alert("Invalid Input", "Please enter valid, positive numbers for duration and calories.");
@@ -58,6 +60,7 @@ const RunTrackerScreen = () => {
       const newRunRecord = {
         duration_minutes: durationMinutes,
         calories_burned: caloriesBurned,
+        workoutName: workoutName,
         timestamp: new Date(), // FIX: Client-side Date object
         date: new Date().toISOString().split('T')[0], 
       };
@@ -98,6 +101,15 @@ const RunTrackerScreen = () => {
           <Text style={styles.description}>
             Enter the details of your run. The record will be appended to your **runHistory** in your user profile.
           </Text>
+
+          <TextInput
+  style={styles.input}
+  value={WorkoutName}
+  onChangeText={setWorkoutName} 
+  keyboardType="default"        
+  placeholder="e.g., Morning Jog"
+  placeholderTextColor={theme.colors.textLight}
+/>
 
           {/* Duration Input */}
           <View style={styles.formGroup}>

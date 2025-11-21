@@ -370,15 +370,22 @@ const SignupScreen = ({ navigation }) => {
         </View>
       </View>
 
-      <Text style={styles.label}>Health Conditions</Text>
-      <TextInput
-        style={[styles.input, styles.multilineInput]}
-        placeholder="Known Health Conditions (e.g., Diabetes, Hypertension, None)"
-        value={healthConditions}
-        onChangeText={setHealthConditions}
-        multiline
-        textAlignVertical="top"
-      />
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Health Conditions</Text>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={healthConditions}
+            onValueChange={(itemValue, itemIndex) => setHealthConditions(itemValue)}
+            label="Health Conditions"
+          >
+            <Picker.Item label="None" value="None" />
+            <Picker.Item label="Obesity" value="Obesity" />
+            <Picker.Item label="Hypertension" value="Hypertension" />
+            <Picker.Item label="Asthma" value="Asthma" />
+            <Picker.Item label="Diabetes" value="Diabetes" />
+          </Picker>
+        </View>
+      </View>
 
       <View style={styles.stepButtons}>
         <TouchableOpacity style={styles.backButton} onPress={prevStep}>

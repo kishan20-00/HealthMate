@@ -1,11 +1,9 @@
-# app.py
 from flask import Flask, request, jsonify, render_template
 import pandas as pd
 import numpy as np
 import joblib
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 import warnings
 warnings.filterwarnings('ignore')
@@ -19,6 +17,7 @@ def load_models():
     
     try:
         # Workout Recommendation Model
+        # UPDATED: Loading v2 model (Multi-output)
         models['workout'] = {
             'model': keras.models.load_model('best_workout_model.h5', compile=False),
             'scaler': joblib.load('scaler.pkl'),
@@ -60,15 +59,19 @@ def load_models():
 # Initialize models
 MODELS = load_models()
 
-# Prediction functions for each model
+# --- UPDATED PREDICTION FUNCTION ---
 def predict_workout(user_data):
-    """Predict workout recommendation"""
+    """Predict workout recommendation AND duration"""
     if MODELS['workout'] is None:
         return {"error": "Workout model not available"}
     
     try:
         # Prepare input data
         input_data = pd.DataFrame([user_data])
+        
+        # Drop non-model features
+        if 'bmi_status' in input_data.columns:
+            input_data = input_data.drop(columns=['bmi_status'])
         
         # Encode categorical variables
         encoders = MODELS['workout']['encoders']
@@ -78,28 +81,37 @@ def predict_workout(user_data):
             else:
                 input_data[col] = encoders[col].transform([encoders[col].classes_[0]])[0]
         
-        # Scale numerical features
-        numerical_cols = ['age', 'bmi', 'duration_minutes', 'calories_burned']
+        # Scale numerical features 
+        # UPDATED: Removed 'duration_minutes' from inputs
+        numerical_cols = ['age', 'bmi', 'calories_burned']
         input_data[numerical_cols] = MODELS['workout']['scaler'].transform(input_data[numerical_cols])
         
         # Make prediction
-        prediction_proba = MODELS['workout']['model'].predict(input_data)
-        prediction_idx = np.argmax(prediction_proba, axis=1)
+        # UPDATED: Model returns list [workout_probs, duration_pred]
+        predictions = MODELS['workout']['model'].predict(input_data)
+        
+        # 1. Handle Workout Classification
+        workout_probs = predictions[0]
+        prediction_idx = np.argmax(workout_probs, axis=1)
         predicted_workout = encoders['recommended_workout'].inverse_transform(prediction_idx)[0]
-        confidence = float(np.max(prediction_proba))
+        confidence = float(np.max(workout_probs))
+        
+        # 2. Handle Duration Regression
+        predicted_duration = float(predictions[1][0][0])
         
         # Get top 3 recommendations
-        top3_indices = np.argsort(prediction_proba[0])[-3:][::-1]
+        top3_indices = np.argsort(workout_probs[0])[-3:][::-1]
         top3_recommendations = [
             {
                 'workout': encoders['recommended_workout'].inverse_transform([idx])[0],
-                'confidence': float(prediction_proba[0][idx])
+                'confidence': float(workout_probs[0][idx])
             }
             for idx in top3_indices
         ]
         
         return {
             'recommended_workout': predicted_workout,
+            'estimated_duration_minutes': round(predicted_duration, 1), # New Field
             'confidence': confidence,
             'top_recommendations': top3_recommendations,
             'status': 'success'
@@ -114,53 +126,40 @@ def predict_lifestyle(user_data):
         return {"error": "Lifestyle model not available"}
     
     try:
-        # Prepare input data
         input_df = pd.DataFrame([user_data])
         
-        # Feature engineering
         recommended_water = 2.0
         input_df['sleep_deficit'] = input_df['recommended_sleep'] - input_df['sleep_hours']
         input_df['sleep_ratio'] = input_df['sleep_hours'] / input_df['recommended_sleep']
         input_df['water_deficit'] = recommended_water - input_df['water_intake_liters']
         
-        # Encode categorical variables
         encoders = MODELS['lifestyle']['encoders']
         scaler = MODELS['lifestyle']['scaler']
         
-        # One-hot encode gender
         gender_encoded = encoders['gender'].transform(input_df[['gender']])
         gender_df = pd.DataFrame(gender_encoded, 
                                columns=encoders['gender'].get_feature_names_out(['gender']))
         
-        # Encode stress level
         if user_data['stress_level'] in encoders['stress_level'].classes_:
             input_df['stress_level_encoded'] = encoders['stress_level'].transform(
                 [user_data['stress_level']])[0]
         else:
             input_df['stress_level_encoded'] = encoders['stress_level'].transform(['Moderate'])[0]
         
-        # Prepare final input
-        feature_cols = ['age', 'sleep_hours', 'recommended_sleep', 'water_intake_liters', 
-                       'screen_time_hours', 'sleep_deficit', 'sleep_ratio', 'water_deficit',
-                       'stress_level_encoded'] + list(gender_df.columns)
-        
         final_input = pd.concat([
             input_df[['age', 'sleep_hours', 'recommended_sleep', 'water_intake_liters', 
-                     'screen_time_hours', 'sleep_deficit', 'sleep_ratio', 'water_deficit',
-                     'stress_level_encoded']],
+                      'screen_time_hours', 'sleep_deficit', 'sleep_ratio', 'water_deficit',
+                      'stress_level_encoded']],
             gender_df
         ], axis=1)
         
-        # Scale features
         scaled_input = scaler.transform(final_input)
         
-        # Make prediction
         prediction_proba = MODELS['lifestyle']['model'].predict(scaled_input)
         prediction_idx = np.argmax(prediction_proba, axis=1)
         predicted_recommendation = encoders['recommendation'].inverse_transform(prediction_idx)[0]
         confidence = float(np.max(prediction_proba))
         
-        # Get top 3 recommendations
         top3_indices = np.argsort(prediction_proba[0])[-3:][::-1]
         top3_recommendations = [
             {
@@ -186,10 +185,8 @@ def predict_meal_plan(user_data):
         return {"error": "Meal plan model not available"}
     
     try:
-        # Prepare input data
         input_df = pd.DataFrame([user_data])
         
-        # Transform input
         feature_encoder = MODELS['meal']['feature_encoder']
         scaler = MODELS['meal']['scaler']
         encoders = MODELS['meal']['encoders']
@@ -197,7 +194,6 @@ def predict_meal_plan(user_data):
         input_encoded = feature_encoder.transform(input_df)
         input_scaled = scaler.transform(input_encoded)
         
-        # Make predictions using separate models
         meal_model = MODELS['meal']['meal_model']
         calories_model = MODELS['meal']['calories_model']
         
@@ -206,11 +202,9 @@ def predict_meal_plan(user_data):
         confidence = float(np.max(meal_pred_proba))
         calories_pred = calories_model.predict(input_scaled)
         
-        # Decode predictions
         predicted_meal = encoders['meal_items'].inverse_transform(meal_pred)[0]
         predicted_calories = float(calories_pred[0])
         
-        # Get top 3 meal recommendations
         top3_indices = np.argsort(meal_pred_proba[0])[-3:][::-1]
         top3_meals = [
             {
@@ -243,15 +237,17 @@ def workout_recommendation():
     """Workout recommendation endpoint"""
     try:
         data = request.get_json()
+        print(data)
         
-        # Validate required fields
-        required_fields = ['age', 'gender', 'bmi', 'activity_level', 'health_condition', 
-                          'duration_minutes', 'calories_burned']
+        # UPDATED: Removed 'duration_minutes' from required fields
+        required_fields = ['age', 'gender', 'bmi', 'activity_level', 'health_condition', 'calories_burned']
+        
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}", "status": "error"}), 400
         
         result = predict_workout(data)
+        print(result)
         return jsonify(result)
         
     except Exception as e:
@@ -263,7 +259,6 @@ def lifestyle_recommendation():
     try:
         data = request.get_json()
         
-        # Validate required fields
         required_fields = ['age', 'gender', 'sleep_hours', 'recommended_sleep', 
                           'water_intake_liters', 'stress_level', 'screen_time_hours']
         for field in required_fields:
@@ -282,7 +277,6 @@ def meal_recommendation():
     try:
         data = request.get_json()
         
-        # Validate required fields
         required_fields = ['age', 'gender', 'bmi_status', 'goal', 'meal_type']
         for field in required_fields:
             if field not in data:
